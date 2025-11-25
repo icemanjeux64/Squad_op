@@ -75,43 +75,29 @@
 
         const { useState, useEffect } = React;
 
-        // --- CONFIGURATION FIREBASE ---
-        let auth = null, db = null;
-        
-        // TENTATIVE DE CONFIGURATION (Auto ou Manuelle)
-        try {
-            let config = null;
-            
-            // 1. Essai via variable d'environnement (Preview)
-            if (typeof window.__firebase_config !== 'undefined') {
-                config = JSON.parse(window.__firebase_config);
-            } 
-            // 2. SINON : REMPLACER CECI PAR VOTRE PROPRE CONFIGURATION FIREBASE POUR USAGE LOCAL
-            /*
-            else {
-                config = {
-                    apiKey: "VOTRE_API_KEY",
-                    authDomain: "VOTRE_PROJECT.firebaseapp.com",
-                    projectId: "VOTRE_PROJECT_ID",
-                    storageBucket: "VOTRE_PROJECT.appspot.com",
-                    messagingSenderId: "...",
-                    appId: "..."
-                };
-            }
-            */
+        // --- CONFIGURATION FIREBASE PROJET: SQUADNET-OPS ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyD3caoQgjcnsyyh-fCSFHwbErPpPvip8p4",
+            authDomain: "squadnet-ops.firebaseapp.com",
+            projectId: "squadnet-ops",
+            storageBucket: "squadnet-ops.firebasestorage.app",
+            messagingSenderId: "453589699258",
+            appId: "1:453589699258:web:85befe0f3da6495c685083",
+            measurementId: "G-103J7PX3NF"
+        };
 
-            if (config) {
-                const app = initializeApp(config);
-                auth = getAuth(app);
-                db = getFirestore(app);
-            } else {
-                console.warn("SQUAD NET: Mode Hors Ligne (Pas de config Firebase)");
-            }
+        // Initialisation
+        let auth = null, db = null;
+        try {
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            console.log("SQUAD NET: Connexion Firebase établie.");
         } catch (e) {
-            console.error("Erreur Init Firebase:", e);
+            console.error("SQUAD NET: Erreur connexion Firebase", e);
         }
 
-        const appId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'squad-net-app';
+        const appId = 'squadnet-ops-v1';
 
         // --- DONNÉES STATIQUES ---
         const SQUADS = ["ALPHA", "BRAVO", "CHARLIE", "DELTA", "ECHO", "FOXTROT", "GOLF", "HOTEL", "INDIA", "JULIETT", "KILO", "LIMA", "MIKE"];
@@ -123,6 +109,16 @@
         const HEALTH_STATES = ["Blessé Léger", "Blessé Grave", "Inconscient", "DCD"];
         const RANKS = ["Recrue", "Soldat", "1cl", "Cpl", "Cch", "Cch1", "Sgt", "Sch", "Sch BM2", "Maj", "Slt", "Ltn", "Cne"];
         const ROLES = ["CDG", "CDE", "GV", "FM", "TP", "Aux San", "AT", "RTO", "Sapeur", "Conducteur"];
+
+        // --- UTILITAIRES GRAMMAIRE ---
+        const de = (word) => {
+            if (!word) return "";
+            const vowels = ['a', 'e', 'i', 'o', 'u', 'y', 'h', 'é', 'è'];
+            const cleanWord = word.trim().toLowerCase();
+            const firstWord = cleanWord.split(' ')[0];
+            const firstChar = firstWord.charAt(0);
+            return vowels.includes(firstChar) ? `d'${word}` : `de ${word}`;
+        };
 
         // --- ICONS (SVG Inline) ---
         const Icon = ({ name, size = 20, className = "" }) => {
@@ -148,17 +144,7 @@
             return <span className={className}>{icons[name] || null}</span>;
         };
 
-        // --- UTILITAIRES GRAMMAIRE ---
-        const de = (word) => {
-            if (!word) return "";
-            const vowels = ['a', 'e', 'i', 'o', 'u', 'y', 'h', 'é', 'è'];
-            const cleanWord = word.trim().toLowerCase();
-            const firstWord = cleanWord.split(' ')[0];
-            const firstChar = firstWord.charAt(0);
-            return vowels.includes(firstChar) ? `d'${word}` : `de ${word}`;
-        };
-
-        // --- COMPOSANTS UI ---
+        // --- COMPOSANTS UI MILITAIRES ---
         const TacticalCard = ({ children, title, className = "" }) => (
             <div className={`relative bg-black border border-emerald-900/50 ${className}`}>
                 <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-emerald-500"></div>
@@ -202,6 +188,7 @@
             </div>
         );
 
+        // --- COMPONENTS APPLICATIFS ---
         const SitrepModal = ({ onClose, type, onConfirm, roster }) => {
             const [step, setStep] = useState(0);
             const [data, setData] = useState({});
