@@ -326,10 +326,59 @@
         };
 
         // --- COMPONENTS APPLICATIFS (SQUAD LEADER) ---
-        // ... (SitrepModal, SquadSelector, MainApp unchanged except for data syncing)
-        
-        // (Recopie des composants existants pour clarté, mais avec modifs de sync)
-        
+        const SitrepModal = ({ onClose, type, onConfirm, roster }) => {
+            const [step, setStep] = useState(0);
+            const [data, setData] = useState({});
+            const [customText, setCustomText] = useState("");
+
+            const handleSelection = (key, value) => {
+                setData(prev => ({ ...prev, [key]: value }));
+                setStep(prev => prev + 1);
+            };
+
+            if (type === 'DIVERS') {
+                return (
+                    <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 font-mono">
+                        <div className="bg-slate-950 border-2 border-emerald-600 w-full max-w-sm p-4 relative z-10">
+                            <h4 className="text-emerald-500 font-mono text-center mb-2 border-b border-emerald-900 pb-2 tracking-widest">OBSERVATION</h4>
+                            <textarea className="w-full h-32 bg-black border border-emerald-800 text-emerald-400 p-3 font-mono text-sm focus:border-emerald-500 focus:outline-none resize-none mb-4" placeholder="EX: DÉCOUVERTE CACHE D'ARMES, 3 SUSPECTS..." value={customText} onChange={(e) => setCustomText(e.target.value)} autoFocus />
+                            <TacticalButton variant="primary" className="w-full" onClick={() => onConfirm({ details: customText || "RAS" })}><Icon name="Check" size={18} /> VALIDER</TacticalButton>
+                            <button onClick={onClose} className="absolute top-2 right-2 text-emerald-800"><Icon name="X" size={24}/></button>
+                        </div>
+                    </div>
+                );
+            }
+
+            const renderContent = () => {
+                if (type === 'CONTACT' || type === 'FEU') {
+                    if (step === 0) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">NATURE</h4><div className="grid grid-cols-2 gap-2">{THREATS.map(t => <TacticalButton key={t} variant="modal" onClick={() => handleSelection('menace', t)}>{t}</TacticalButton>)}</div></>);
+                    if (step === 1) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">VOLUME</h4><div className="grid grid-cols-2 gap-2">{VOLUMES.map(v => <TacticalButton key={v} variant="modal" onClick={() => handleSelection('volume', v)}>{v}</TacticalButton>)}</div></>);
+                    if (step === 2) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">AZIMUT</h4><div className="grid grid-cols-3 gap-2">{DIRECTIONS.map(d => <TacticalButton key={d} variant="modal" onClick={() => handleSelection('direction', d)}>{d}</TacticalButton>)}</div></>);
+                    if (step === 3) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">DISTANCE</h4><div className="grid grid-cols-1 gap-2">{DISTANCES.map(d => <TacticalButton key={d} variant="modal" onClick={() => onConfirm({ ...data, distance: d })}>{d}</TacticalButton>)}</div></>);
+                }
+                if (type === 'SANTE') {
+                    if (step === 0) return (<><h4 className="text-red-500 font-mono text-center mb-4 border-b border-red-900 pb-2">QUI ?</h4><div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">{roster.map(s => <TacticalButton key={s.id} variant="modal" className="border-red-900 text-red-400 hover:bg-red-950" onClick={() => handleSelection('soldatData', { id: s.id, name: `${s.rank} ${s.name}` })}>{s.rank} {s.name}</TacticalButton>)}</div></>);
+                    if (step === 1) return (<><h4 className="text-red-500 font-mono text-center mb-4 border-b border-red-900 pb-2">BILAN</h4><div className="grid grid-cols-1 gap-2">{HEALTH_STATES.map(s => <TacticalButton key={s} variant="modal" className="border-red-900 text-red-400 hover:bg-red-950" onClick={() => onConfirm({ ...data, etat: s })}>{s}</TacticalButton>)}</div></>);
+                }
+                if (type === 'MVT') {
+                    return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">MANOEUVRE</h4><div className="grid grid-cols-1 gap-2">{MVT_TYPES.map(t => <TacticalButton key={t} variant="modal" onClick={() => onConfirm({ typeMvt: t })}>{t}</TacticalButton>)}</div></>);
+                }
+                return <div>Erreur</div>;
+            };
+
+            return (
+                <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 font-mono">
+                    <div className="bg-slate-950 border-2 border-emerald-600 w-full max-w-sm p-0 shadow-[0_0_50px_rgba(16,185,129,0.2)] relative z-10">
+                        <div className="bg-emerald-950/50 border-b border-emerald-600 p-3 flex justify-between items-center">
+                            <div className="flex items-center gap-2"><div className="w-2 h-2 bg-emerald-500 animate-pulse"></div><h3 className="text-emerald-400 font-bold text-lg tracking-widest">SITREP // {type}</h3></div>
+                            <button onClick={onClose} className="text-emerald-800 hover:text-red-500"><Icon name="X" size={24}/></button>
+                        </div>
+                        <div className="p-6">{renderContent()}</div>
+                    </div>
+                </div>
+            );
+        };
+
         const SquadSelector = ({ onSelectSquad, user }) => {
             const [takenSquads, setTakenSquads] = useState({});
             const [joiningSquad, setJoiningSquad] = useState(null);
@@ -349,7 +398,6 @@
 
             const initiateJoin = (squad) => { if (!takenSquads[squad] || takenSquads[squad] === user?.uid) setJoiningSquad(squad); };
             
-            // Nouvelle fonction pour rejoindre en tant que HQ
             const enterHQ = () => {
                  onSelectSquad({ isHQ: true });
             };
