@@ -202,7 +202,7 @@
             </div>
         );
 
-        const HeaderClock = ({ className = "" }) => {
+        const HeaderClock = ({ className = "", textClass = "text-emerald-500", subTextClass = "text-emerald-700" }) => {
             const [date, setDate] = useState(new Date());
             useEffect(() => {
                 const timer = setInterval(() => setDate(new Date()), 1000);
@@ -214,8 +214,8 @@
 
             return (
                 <div className={`text-right flex flex-col items-end ${className}`}>
-                    <div className="font-mono font-bold text-emerald-500 text-sm sm:text-lg leading-none">{timeStr}</div>
-                    <div className="text-[8px] sm:text-[9px] text-emerald-700 uppercase tracking-widest text-right whitespace-nowrap">LOCAL / {dateStr}</div>
+                    <div className={`font-mono font-bold text-sm sm:text-lg leading-none ${textClass}`}>{timeStr}</div>
+                    <div className={`text-[8px] sm:text-[9px] uppercase tracking-widest text-right whitespace-nowrap ${subTextClass}`}>LOCAL / {dateStr}</div>
                 </div>
             );
         };
@@ -257,17 +257,19 @@
                      {/* Background Grid Blue for HQ */}
                     <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e3a8a_1px,transparent_1px),linear-gradient(to_bottom,#1e3a8a_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-20 pointer-events-none z-0"></div>
                     
-                    <header className="relative z-10 flex justify-between items-center border-b-2 border-blue-900 pb-4 mb-6 bg-black/80 backdrop-blur">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 border border-blue-800 bg-blue-950/30"><Icon name="Globe" className="text-blue-400" size={32}/></div>
-                            <div>
-                                <h1 className="text-2xl font-black uppercase tracking-[0.2em] text-blue-400 text-glow">ÉTAT-MAJOR // VUE GLOBALE</h1>
-                                <div className="text-xs text-blue-700 font-mono uppercase tracking-widest">CENTRE OPÉRATIONNEL (TOC)</div>
+                    <header className="relative z-10 flex justify-between items-center border-b-2 border-blue-900 p-2 sm:pb-4 sm:mb-6 bg-black/80 backdrop-blur gap-2">
+                        <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
+                            <div className="p-1 sm:p-2 border border-blue-800 bg-blue-950/30 shrink-0">
+                                <Icon name="Globe" className="text-blue-400" size={24}/>
+                            </div>
+                            <div className="min-w-0">
+                                <h1 className="text-sm sm:text-2xl font-black uppercase tracking-[0.15em] text-blue-400 text-glow truncate">ÉTAT-MAJOR</h1>
+                                <div className="text-[8px] sm:text-xs text-blue-700 font-mono uppercase tracking-widest truncate">CENTRE OPÉRATIONNEL</div>
                             </div>
                         </div>
-                        <div className="flex items-center gap-4">
-                            <HeaderClock className="hidden sm:flex text-blue-500" />
-                            <button onClick={onLogout} className="text-blue-800 hover:text-red-500 border border-blue-900 p-2 hover:bg-red-950/20"><Icon name="LogOut" size={20} /></button>
+                        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+                            <HeaderClock className="flex text-blue-500" textClass="text-blue-500 text-xs sm:text-lg" subTextClass="text-blue-800 text-[8px] sm:text-[9px]" />
+                            <button onClick={onLogout} className="text-blue-800 hover:text-red-500 border border-blue-900 p-1 sm:p-2 hover:bg-red-950/20"><Icon name="LogOut" size={20} /></button>
                         </div>
                     </header>
 
@@ -397,11 +399,6 @@
             }, [user]);
 
             const initiateJoin = (squad) => { if (!takenSquads[squad] || takenSquads[squad] === user?.uid) setJoiningSquad(squad); };
-            
-            const enterHQ = () => {
-                 onSelectSquad({ isHQ: true });
-            };
-
             const confirmJoin = async () => {
                 if (!leaderName.trim()) { alert("ID REQUIS"); return; }
                 if (db) {
@@ -412,6 +409,10 @@
                     } catch (e) { console.log("Offline selection"); }
                 }
                 onSelectSquad({ name: joiningSquad, leaderRank, leaderName, isHQ: false });
+            };
+            
+            const enterHQ = () => {
+                 onSelectSquad({ isHQ: true });
             };
 
             if (joiningSquad) {
@@ -473,7 +474,7 @@
             const squadPrefix = `sq_data_${squadData.name}`;
             const [activeTab, setActiveTab] = useState('briefing');
             
-            // Initialisation avec persistance locale
+            // Initialisation avec persistance locale pour chaque squad spécifique
             const [missionTime, setMissionTime] = useStickyState(0, `${squadPrefix}_time`);
             const [missionActive, setMissionActive] = useStickyState(false, `${squadPrefix}_active`);
             const [logs, setLogs] = useStickyState([], `${squadPrefix}_logs`);
