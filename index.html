@@ -152,7 +152,9 @@
                 Lock: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
                 LogOut: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
                 Eye: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>,
-                Globe: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                Globe: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>,
+                Upload: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
+                Download: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             };
             return <span className={className}>{icons[name] || null}</span>;
         };
@@ -237,14 +239,16 @@
                 return () => unsubscribe();
             }, []);
 
-            const getStatusColor = (squad) => {
-                // Logique simple : si on a des données de santé, on détermine la couleur
-                if (!squad.healthSummary) return "border-emerald-900";
-                if (squad.healthSummary.kia > 0) return "border-red-900";
-                if (squad.healthSummary.wia > 0) return "border-amber-900";
-                return "border-emerald-900";
+            const downloadTxtFile = (filename, text) => {
+                const element = document.createElement('a');
+                element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+                element.setAttribute('download', filename);
+                element.style.display = 'none';
+                document.body.appendChild(element);
+                element.click();
+                document.body.removeChild(element);
             };
-            
+
             const getStatusText = (squad) => {
                 if (!squad.healthSummary) return "OK";
                 if (squad.healthSummary.kia > 0) return "PERTES";
@@ -282,6 +286,7 @@
                         
                         {squadsData.map(squad => {
                             const borderColor = squad.lastLog?.type === 'SANTE' ? 'border-red-900' : 'border-blue-900';
+                            const hasReport = squad.reportSubmitted && squad.finalReport;
                             
                             return (
                                 <TacticalCard key={squad.id} title={`GROUPE ${squad.id}`} className={`h-full ${borderColor}`} borderColor={borderColor}>
@@ -318,6 +323,18 @@
                                                 {squad.lastLog ? `[${squad.lastLog.type}] ${squad.lastLog.message}` : "SILENCE RADIO"}
                                             </div>
                                         </div>
+
+                                        {hasReport && (
+                                            <div className="mt-2">
+                                                <TacticalButton 
+                                                    variant="hq" 
+                                                    className="w-full" 
+                                                    onClick={() => downloadTxtFile(`RETEX_${squad.id}.txt`, squad.finalReport)}
+                                                >
+                                                    <Icon name="Download" size={16} /> TÉLÉCHARGER RETEX
+                                                </TacticalButton>
+                                            </div>
+                                        )}
                                     </div>
                                 </TacticalCard>
                             );
@@ -590,6 +607,26 @@
                 return txt;
             };
 
+            // NEW: FUNCTION TO SEND REPORT TO HQ
+            const sendReportToHQ = async () => {
+                if (!db || !squadData) {
+                    alert("Erreur: Non connecté au QG");
+                    return;
+                }
+                const reportText = generateNarrativeAAR();
+                try {
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'active_squads', squadData.name), {
+                        finalReport: reportText,
+                        reportSubmitted: true,
+                        lastUpdate: Date.now()
+                    });
+                    alert("Rapport transmis au QG pour archivage.");
+                } catch (e) {
+                    console.error("Erreur envoi", e);
+                    alert("Echec transmission.");
+                }
+            };
+
             const addSoldier = () => {
                 if (!newSoldier.name) return;
                 setRoster([...roster, { ...newSoldier, id: Date.now(), status: "APTE" }]);
@@ -648,7 +685,12 @@
                         )}
                         {activeTab === 'aar' && (
                             <div className="space-y-4 h-full animate-fade-in">
-                                <TacticalCard title="RAPPORT DE FIN DE MISSION" className="h-full flex flex-col"><textarea className="w-full h-[400px] bg-black border border-emerald-900 text-emerald-400 font-mono text-xs p-4 focus:outline-none resize-none leading-relaxed" readOnly value={generateNarrativeAAR()} /><div className="mt-4 flex justify-end"><TacticalButton onClick={()=>{navigator.clipboard.writeText(generateNarrativeAAR()); alert("Copié");}} variant="primary"><Icon name="Copy" size={18}/> COPIER LE RAPPORT</TacticalButton></div></TacticalCard>
+                                <TacticalCard title="RAPPORT DE FIN DE MISSION" className="h-full flex flex-col"><textarea className="w-full h-[400px] bg-black border border-emerald-900 text-emerald-400 font-mono text-xs p-4 focus:outline-none resize-none leading-relaxed" readOnly value={generateNarrativeAAR()} />
+                                <div className="mt-4 flex justify-end gap-2">
+                                    <TacticalButton onClick={()=>{navigator.clipboard.writeText(generateNarrativeAAR()); alert("Copié");}} variant="secondary"><Icon name="Copy" size={18}/> COPIER</TacticalButton>
+                                    <TacticalButton onClick={sendReportToHQ} variant="primary"><Icon name="Upload" size={18}/> TRANSMETTRE AU QG</TacticalButton>
+                                </div>
+                                </TacticalCard>
                             </div>
                         )}
                     </main>
