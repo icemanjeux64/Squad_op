@@ -70,7 +70,7 @@
     <script type="text/babel" data-type="module">
         // --- IMPORTS FIREBASE (Version Web Modular via CDN) ---
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-        import { getFirestore, collection, doc, setDoc, onSnapshot, query, deleteDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+        import { getFirestore, collection, doc, setDoc, onSnapshot, query, deleteDoc, getDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 
         const { useState, useEffect } = React;
@@ -111,7 +111,6 @@
         const ROLES = ["CDG", "CDE", "GV", "FM", "TP", "Aux San", "AT", "RTO", "Sapeur", "Conducteur"];
 
         // --- UTILITAIRES ---
-        // Hook personnalisé pour persister l'état dans le localStorage
         function useStickyState(defaultValue, key) {
             const [value, setValue] = useState(() => {
                 const stickyValue = window.localStorage.getItem(key);
@@ -151,24 +150,26 @@
                 X: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 18 18"/></svg>,
                 Check: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>,
                 Lock: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
-                LogOut: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                LogOut: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
+                Eye: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>,
+                Globe: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
             };
             return <span className={className}>{icons[name] || null}</span>;
         };
 
         // --- COMPOSANTS UI MILITAIRES ---
-        const TacticalCard = ({ children, title, className = "" }) => (
-            <div className={`relative bg-black border border-emerald-900/50 ${className}`}>
-                <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-emerald-500"></div>
-                <div className="absolute top-0 right-0 w-2 h-2 border-t-2 border-r-2 border-emerald-500"></div>
-                <div className="absolute bottom-0 left-0 w-2 h-2 border-b-2 border-l-2 border-emerald-500"></div>
-                <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-emerald-500"></div>
+        const TacticalCard = ({ children, title, className = "", borderColor = "border-emerald-900" }) => (
+            <div className={`relative bg-black border ${borderColor}/50 ${className}`}>
+                <div className={`absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 ${borderColor.replace('-900', '-500')}`}></div>
+                <div className={`absolute top-0 right-0 w-2 h-2 border-t-2 border-r-2 ${borderColor.replace('-900', '-500')}`}></div>
+                <div className={`absolute bottom-0 left-0 w-2 h-2 border-b-2 border-l-2 ${borderColor.replace('-900', '-500')}`}></div>
+                <div className={`absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 ${borderColor.replace('-900', '-500')}`}></div>
                 {title && (
-                <div className="bg-emerald-950/30 border-b border-emerald-900 p-2 flex items-center justify-between">
-                    <h3 className="text-emerald-500 font-mono text-xs font-bold tracking-[0.2em] uppercase flex items-center gap-2">
-                        <span className="w-1 h-3 bg-emerald-600 inline-block"></span> {title}
+                <div className={`bg-${borderColor.split('-')[1]}-950/30 border-b ${borderColor} p-2 flex items-center justify-between`}>
+                    <h3 className={`text-${borderColor.split('-')[1]}-500 font-mono text-xs font-bold tracking-[0.2em] uppercase flex items-center gap-2`}>
+                        <span className={`w-1 h-3 bg-${borderColor.split('-')[1]}-600 inline-block`}></span> {title}
                     </h3>
-                    <div className="flex gap-1"><div className="w-1 h-1 bg-emerald-900"></div><div className="w-1 h-1 bg-emerald-700"></div><div className="w-1 h-1 bg-emerald-500 animate-pulse"></div></div>
+                    <div className="flex gap-1"><div className={`w-1 h-1 bg-${borderColor.split('-')[1]}-900`}></div><div className={`w-1 h-1 bg-${borderColor.split('-')[1]}-700`}></div><div className={`w-1 h-1 bg-${borderColor.split('-')[1]}-500 animate-pulse`}></div></div>
                 </div>
                 )}
                 <div className="p-4 relative z-10">{children}</div>
@@ -183,7 +184,8 @@
                 danger: "bg-red-950/30 hover:bg-red-900/50 text-red-500 border border-red-800 shadow-[0_0_10px_rgba(239,68,68,0.1)]",
                 action: "bg-slate-900 hover:bg-emerald-900/30 text-emerald-500 border border-emerald-800 hover:border-emerald-400",
                 modal: "bg-black hover:bg-emerald-900/50 text-emerald-300 border border-emerald-800 w-full text-xs py-3",
-                locked: "bg-black border border-red-900/50 text-red-900 cursor-not-allowed"
+                locked: "bg-black border border-red-900/50 text-red-900 cursor-not-allowed",
+                hq: "bg-blue-900/20 hover:bg-blue-800/40 text-blue-400 border border-blue-600 shadow-[0_0_10px_rgba(59,130,246,0.1)]"
             };
             return (
                 <button onClick={onClick} disabled={disabled} className={`relative font-mono uppercase tracking-widest text-xs font-bold py-3 px-4 transition-all duration-75 flex items-center justify-center gap-2 active:translate-y-px disabled:opacity-40 disabled:cursor-not-allowed overflow-hidden group ${variants[variant]} ${className}`}>
@@ -200,7 +202,6 @@
             </div>
         );
 
-        // Composant Horloge Responsive (Adapté Mobile/PC)
         const HeaderClock = ({ className = "" }) => {
             const [date, setDate] = useState(new Date());
             useEffect(() => {
@@ -219,60 +220,116 @@
             );
         };
 
-        // --- COMPONENTS APPLICATIFS ---
-        const SitrepModal = ({ onClose, type, onConfirm, roster }) => {
-            const [step, setStep] = useState(0);
-            const [data, setData] = useState({});
-            const [customText, setCustomText] = useState("");
+        // --- DASHBOARD ÉTAT-MAJOR (HQ) ---
+        const HQDashboard = ({ onLogout }) => {
+            const [squadsData, setSquadsData] = useState([]);
 
-            const handleSelection = (key, value) => {
-                setData(prev => ({ ...prev, [key]: value }));
-                setStep(prev => prev + 1);
+            useEffect(() => {
+                if (!db) return;
+                const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'active_squads'));
+                const unsubscribe = onSnapshot(q, (snapshot) => {
+                    const squads = [];
+                    snapshot.forEach(doc => {
+                        squads.push({ id: doc.id, ...doc.data() });
+                    });
+                    setSquadsData(squads);
+                });
+                return () => unsubscribe();
+            }, []);
+
+            const getStatusColor = (squad) => {
+                // Logique simple : si on a des données de santé, on détermine la couleur
+                if (!squad.healthSummary) return "border-emerald-900";
+                if (squad.healthSummary.kia > 0) return "border-red-900";
+                if (squad.healthSummary.wia > 0) return "border-amber-900";
+                return "border-emerald-900";
             };
-
-            if (type === 'DIVERS') {
-                return (
-                    <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 font-mono">
-                        <div className="bg-slate-950 border-2 border-emerald-600 w-full max-w-sm p-4 relative z-10">
-                            <h4 className="text-emerald-500 font-mono text-center mb-2 border-b border-emerald-900 pb-2 tracking-widest">OBSERVATION</h4>
-                            <textarea className="w-full h-32 bg-black border border-emerald-800 text-emerald-400 p-3 font-mono text-sm focus:border-emerald-500 focus:outline-none resize-none mb-4" placeholder="EX: DÉCOUVERTE CACHE D'ARMES, 3 SUSPECTS..." value={customText} onChange={(e) => setCustomText(e.target.value)} autoFocus />
-                            <TacticalButton variant="primary" className="w-full" onClick={() => onConfirm({ details: customText || "RAS" })}><Icon name="Check" size={18} /> VALIDER</TacticalButton>
-                            <button onClick={onClose} className="absolute top-2 right-2 text-emerald-800"><Icon name="X" size={24}/></button>
-                        </div>
-                    </div>
-                );
-            }
-
-            const renderContent = () => {
-                if (type === 'CONTACT' || type === 'FEU') {
-                    if (step === 0) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">NATURE</h4><div className="grid grid-cols-2 gap-2">{THREATS.map(t => <TacticalButton key={t} variant="modal" onClick={() => handleSelection('menace', t)}>{t}</TacticalButton>)}</div></>);
-                    if (step === 1) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">VOLUME</h4><div className="grid grid-cols-2 gap-2">{VOLUMES.map(v => <TacticalButton key={v} variant="modal" onClick={() => handleSelection('volume', v)}>{v}</TacticalButton>)}</div></>);
-                    if (step === 2) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">AZIMUT</h4><div className="grid grid-cols-3 gap-2">{DIRECTIONS.map(d => <TacticalButton key={d} variant="modal" onClick={() => handleSelection('direction', d)}>{d}</TacticalButton>)}</div></>);
-                    if (step === 3) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">DISTANCE</h4><div className="grid grid-cols-1 gap-2">{DISTANCES.map(d => <TacticalButton key={d} variant="modal" onClick={() => onConfirm({ ...data, distance: d })}>{d}</TacticalButton>)}</div></>);
-                }
-                if (type === 'SANTE') {
-                    if (step === 0) return (<><h4 className="text-red-500 font-mono text-center mb-4 border-b border-red-900 pb-2">QUI ?</h4><div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">{roster.map(s => <TacticalButton key={s.id} variant="modal" className="border-red-900 text-red-400 hover:bg-red-950" onClick={() => handleSelection('soldatData', { id: s.id, name: `${s.rank} ${s.name}` })}>{s.rank} {s.name}</TacticalButton>)}</div></>);
-                    if (step === 1) return (<><h4 className="text-red-500 font-mono text-center mb-4 border-b border-red-900 pb-2">BILAN</h4><div className="grid grid-cols-1 gap-2">{HEALTH_STATES.map(s => <TacticalButton key={s} variant="modal" className="border-red-900 text-red-400 hover:bg-red-950" onClick={() => onConfirm({ ...data, etat: s })}>{s}</TacticalButton>)}</div></>);
-                }
-                if (type === 'MVT') {
-                    return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">MANOEUVRE</h4><div className="grid grid-cols-1 gap-2">{MVT_TYPES.map(t => <TacticalButton key={t} variant="modal" onClick={() => onConfirm({ typeMvt: t })}>{t}</TacticalButton>)}</div></>);
-                }
-                return <div>Erreur</div>;
+            
+            const getStatusText = (squad) => {
+                if (!squad.healthSummary) return "OK";
+                if (squad.healthSummary.kia > 0) return "PERTES";
+                if (squad.healthSummary.wia > 0) return "BLESSÉS";
+                return "OPÉRATIONNEL";
             };
 
             return (
-                <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 font-mono">
-                    <div className="bg-slate-950 border-2 border-emerald-600 w-full max-w-sm p-0 shadow-[0_0_50px_rgba(16,185,129,0.2)] relative z-10">
-                        <div className="bg-emerald-950/50 border-b border-emerald-600 p-3 flex justify-between items-center">
-                            <div className="flex items-center gap-2"><div className="w-2 h-2 bg-emerald-500 animate-pulse"></div><h3 className="text-emerald-400 font-bold text-lg tracking-widest">SITREP // {type}</h3></div>
-                            <button onClick={onClose} className="text-emerald-800 hover:text-red-500"><Icon name="X" size={24}/></button>
+                <div className="min-h-screen bg-black text-blue-500 font-mono p-4">
+                     {/* Background Grid Blue for HQ */}
+                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e3a8a_1px,transparent_1px),linear-gradient(to_bottom,#1e3a8a_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-20 pointer-events-none z-0"></div>
+                    
+                    <header className="relative z-10 flex justify-between items-center border-b-2 border-blue-900 pb-4 mb-6 bg-black/80 backdrop-blur">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 border border-blue-800 bg-blue-950/30"><Icon name="Globe" className="text-blue-400" size={32}/></div>
+                            <div>
+                                <h1 className="text-2xl font-black uppercase tracking-[0.2em] text-blue-400 text-glow">ÉTAT-MAJOR // VUE GLOBALE</h1>
+                                <div className="text-xs text-blue-700 font-mono uppercase tracking-widest">CENTRE OPÉRATIONNEL (TOC)</div>
+                            </div>
                         </div>
-                        <div className="p-6">{renderContent()}</div>
+                        <div className="flex items-center gap-4">
+                            <HeaderClock className="hidden sm:flex text-blue-500" />
+                            <button onClick={onLogout} className="text-blue-800 hover:text-red-500 border border-blue-900 p-2 hover:bg-red-950/20"><Icon name="LogOut" size={20} /></button>
+                        </div>
+                    </header>
+
+                    <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {squadsData.length === 0 && (
+                            <div className="col-span-full text-center py-20 text-blue-900 uppercase tracking-widest animate-pulse">
+                                AUCUNE UNITÉ DÉPLOYÉE SUR LE RÉSEAU
+                            </div>
+                        )}
+                        
+                        {squadsData.map(squad => {
+                            const borderColor = squad.lastLog?.type === 'SANTE' ? 'border-red-900' : 'border-blue-900';
+                            
+                            return (
+                                <TacticalCard key={squad.id} title={`GROUPE ${squad.id}`} className={`h-full ${borderColor}`} borderColor={borderColor}>
+                                    <div className="flex flex-col h-full gap-3">
+                                        <div className="flex justify-between items-start border-b border-blue-900/30 pb-2">
+                                            <div>
+                                                <div className="text-xs text-blue-700 uppercase tracking-widest">CHEF DE GROUPE</div>
+                                                <div className="text-blue-300 font-bold">{squad.leaderRank} {squad.leaderName}</div>
+                                            </div>
+                                            <div className="text-right">
+                                                 <span className={`text-xs px-2 py-1 border ${squad.healthSummary?.kia > 0 ? 'border-red-800 text-red-500 bg-red-950/20' : squad.healthSummary?.wia > 0 ? 'border-amber-800 text-amber-500' : 'border-blue-800 text-blue-500'}`}>
+                                                    {getStatusText(squad)}
+                                                 </span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="space-y-2 flex-1">
+                                            <div>
+                                                <div className="text-[10px] text-blue-800 uppercase">MISSION EN COURS</div>
+                                                <div className="text-xs text-blue-400 truncate">{squad.mission?.objective || "EN ATTENTE D'ORDRES"}</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-[10px] text-blue-800 uppercase">LOCALISATION</div>
+                                                <div className="text-xs text-blue-400">{squad.mission?.location || "NON DÉFINIE"}</div>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-2 bg-blue-950/20 border border-blue-900/50 p-2 min-h-[60px]">
+                                            <div className="text-[9px] text-blue-600 uppercase mb-1 flex justify-between">
+                                                <span>DERNIER SITREP</span>
+                                                <span>{squad.lastLog?.time || "--:--"}</span>
+                                            </div>
+                                            <div className={`text-xs font-mono ${squad.lastLog?.type === 'CONTACT' || squad.lastLog?.type === 'FEU' ? 'text-amber-400' : squad.lastLog?.type === 'SANTE' ? 'text-red-400' : 'text-blue-300'}`}>
+                                                {squad.lastLog ? `[${squad.lastLog.type}] ${squad.lastLog.message}` : "SILENCE RADIO"}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </TacticalCard>
+                            );
+                        })}
                     </div>
                 </div>
             );
         };
 
+        // --- COMPONENTS APPLICATIFS (SQUAD LEADER) ---
+        // ... (SitrepModal, SquadSelector, MainApp unchanged except for data syncing)
+        
+        // (Recopie des composants existants pour clarté, mais avec modifs de sync)
+        
         const SquadSelector = ({ onSelectSquad, user }) => {
             const [takenSquads, setTakenSquads] = useState({});
             const [joiningSquad, setJoiningSquad] = useState(null);
@@ -291,6 +348,12 @@
             }, [user]);
 
             const initiateJoin = (squad) => { if (!takenSquads[squad] || takenSquads[squad] === user?.uid) setJoiningSquad(squad); };
+            
+            // Nouvelle fonction pour rejoindre en tant que HQ
+            const enterHQ = () => {
+                 onSelectSquad({ isHQ: true });
+            };
+
             const confirmJoin = async () => {
                 if (!leaderName.trim()) { alert("ID REQUIS"); return; }
                 if (db) {
@@ -300,7 +363,7 @@
                         });
                     } catch (e) { console.log("Offline selection"); }
                 }
-                onSelectSquad({ name: joiningSquad, leaderRank, leaderName });
+                onSelectSquad({ name: joiningSquad, leaderRank, leaderName, isHQ: false });
             };
 
             if (joiningSquad) {
@@ -333,7 +396,15 @@
                     <div className="max-w-md w-full space-y-8 relative z-10">
                         <div className="text-center border-b-2 border-emerald-800 pb-6">
                             <img src="Logo.png" alt="Logo" className="h-20 mx-auto mb-4 opacity-80 drop-shadow-[0_0_10px_rgba(16,185,129,0.6)]" />
-                            <h1 className="text-4xl font-black text-emerald-500 tracking-[0.2em] mb-2" style={{textShadow:'0 0 20px rgba(16,185,129,0.5)'}}>SQUAD NET</h1><p className="text-emerald-800 font-bold text-xs tracking-[0.5em] uppercase">Système de Commandement</p></div>
+                            <h1 className="text-4xl font-black text-emerald-500 tracking-[0.2em] mb-2" style={{textShadow:'0 0 20px rgba(16,185,129,0.5)'}}>SQUAD NET</h1><p className="text-emerald-800 font-bold text-xs tracking-[0.5em] uppercase">Système de Commandement</p>
+                        </div>
+                        
+                        <div className="flex justify-center mb-6">
+                             <button onClick={enterHQ} className="w-full py-3 bg-blue-900/20 border border-blue-600 text-blue-400 hover:bg-blue-800/40 hover:text-blue-200 font-bold tracking-widest text-sm shadow-[0_0_15px_rgba(37,99,235,0.3)] flex items-center justify-center gap-2">
+                                <Icon name="Globe" size={18} /> ACCÈS ÉTAT-MAJOR
+                             </button>
+                        </div>
+
                         <div className="grid grid-cols-2 gap-4">{SQUADS.map(squad => {
                             const isTaken = takenSquads[squad] && takenSquads[squad] !== user?.uid;
                             const isMine = takenSquads[squad] === user?.uid;
@@ -354,7 +425,7 @@
             const squadPrefix = `sq_data_${squadData.name}`;
             const [activeTab, setActiveTab] = useState('briefing');
             
-            // Initialisation avec persistance locale pour chaque squad spécifique
+            // Initialisation avec persistance locale
             const [missionTime, setMissionTime] = useStickyState(0, `${squadPrefix}_time`);
             const [missionActive, setMissionActive] = useStickyState(false, `${squadPrefix}_active`);
             const [logs, setLogs] = useStickyState([], `${squadPrefix}_logs`);
@@ -364,6 +435,33 @@
             const [modalOpen, setModalOpen] = useState(false);
             const [currentActionType, setCurrentActionType] = useState(null);
             const [newSoldier, setNewSoldier] = useState({ name: "", rank: "Soldat", role: "GV" });
+
+            // SYNC DATA TO FIRESTORE FOR HQ
+            useEffect(() => {
+                if(!db || !missionData) return;
+                const syncToHQ = async () => {
+                    try {
+                        const healthSummary = {
+                            active: roster.filter(s => s.status === 'APTE').length,
+                            wia: roster.filter(s => s.status === 'BLESSÉ' || s.status === 'INCONSCIENT').length,
+                            kia: roster.filter(s => s.status === 'DCD').length
+                        };
+                        
+                        // On met à jour le document avec les dernières infos
+                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'active_squads', squadData.name), {
+                            mission: missionData,
+                            healthSummary: healthSummary,
+                            lastLog: logs.length > 0 ? logs[0] : null, // Le log le plus récent est en index 0 dans notre tableau
+                            lastUpdate: Date.now()
+                        });
+                    } catch (e) {
+                        console.log("Sync silent fail");
+                    }
+                };
+                
+                // On sync quand les logs ou le roster ou la mission changent
+                syncToHQ();
+            }, [logs, roster, missionData]);
 
             useEffect(() => {
                 let interval;
@@ -394,7 +492,11 @@
                 else if (type === 'DIVERS') shortMsg = `RENS: ${data.details}`;
                 else shortMsg = data.details || "";
                 
-                setLogs(prev => [{ id: Date.now(), missionTime: missionT, type, raw: data, message: shortMsg }, ...prev]);
+                // Ajout de l'heure réelle pour le log
+                const realTime = new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+                
+                setLogs(prev => [{ id: Date.now(), time: realTime, missionTime: missionT, type, raw: data, message: shortMsg }, ...prev]);
+                
                 if (type === 'SANTE' && data.soldatData?.id) {
                     let st = 'BLESSÉ'; if(data.etat === 'DCD') st = 'DCD'; else if(data.etat === 'Inconscient') st = 'INCONSCIENT';
                     setRoster(prev => prev.map(s => s.id === data.soldatData.id ? { ...s, status: st } : s));
@@ -527,7 +629,7 @@
             }, []);
 
             const handleLogout = async () => {
-                if (squadData && db && user) {
+                if (squadData && db && user && !squadData.isHQ) {
                     try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'active_squads', squadData.name)); } catch(e) {}
                 }
                 setSquadData(null);
@@ -536,6 +638,13 @@
 
             if (!user) return <div className="h-screen bg-black flex items-center justify-center text-emerald-500 font-mono tracking-widest animate-pulse">INITIALISATION SYSTÈME...</div>;
             if (!squadData) return <SquadSelector user={user} onSelectSquad={setSquadData} />;
+            
+            // ROUTAGE : Si c'est un profil HQ, on affiche le Dashboard
+            if (squadData.isHQ) {
+                return <HQDashboard onLogout={handleLogout} />;
+            }
+            
+            // Sinon c'est un Squad Leader classique
             return <MainApp squadData={squadData} user={user} onLogout={handleLogout} />;
         };
 
