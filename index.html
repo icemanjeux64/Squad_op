@@ -110,7 +110,19 @@
         const RANKS = ["Recrue", "Soldat", "1cl", "Cpl", "Cch", "Cch1", "Sgt", "Sch", "Sch BM2", "Maj", "Slt", "Ltn", "Cne"];
         const ROLES = ["CDG", "CDE", "GV", "FM", "TP", "Aux San", "AT", "RTO", "Sapeur", "Conducteur"];
 
-        // --- UTILITAIRES GRAMMAIRE ---
+        // --- UTILITAIRES ---
+        // Hook personnalisé pour persister l'état dans le localStorage
+        function useStickyState(defaultValue, key) {
+            const [value, setValue] = useState(() => {
+                const stickyValue = window.localStorage.getItem(key);
+                return stickyValue !== null ? JSON.parse(stickyValue) : defaultValue;
+            });
+            useEffect(() => {
+                window.localStorage.setItem(key, JSON.stringify(value));
+            }, [key, value]);
+            return [value, setValue];
+        }
+
         const de = (word) => {
             if (!word) return "";
             const vowels = ['a', 'e', 'i', 'o', 'u', 'y', 'h', 'é', 'è'];
@@ -317,14 +329,18 @@
         };
 
         const MainApp = ({ squadData, onLogout }) => {
+            const squadPrefix = `sq_data_${squadData.name}`;
             const [activeTab, setActiveTab] = useState('briefing');
-            const [missionTime, setMissionTime] = useState(0);
-            const [missionActive, setMissionActive] = useState(false);
+            
+            // Initialisation avec persistance locale pour chaque squad spécifique
+            const [missionTime, setMissionTime] = useStickyState(0, `${squadPrefix}_time`);
+            const [missionActive, setMissionActive] = useStickyState(false, `${squadPrefix}_active`);
+            const [logs, setLogs] = useStickyState([], `${squadPrefix}_logs`);
+            const [missionData, setMissionData] = useStickyState({ name: "AUBE SOMBRE", objective: "RECO AXE ALPHA", location: "GRID 045-112" }, `${squadPrefix}_mission`);
+            const [roster, setRoster] = useStickyState([{ id: 1, name: squadData.leaderName, rank: squadData.leaderRank, role: "CDG", status: "APTE" }], `${squadPrefix}_roster`);
+            
             const [modalOpen, setModalOpen] = useState(false);
             const [currentActionType, setCurrentActionType] = useState(null);
-            const [logs, setLogs] = useState([]);
-            const [missionData, setMissionData] = useState({ name: "AUBE SOMBRE", objective: "RECO AXE ALPHA", location: "GRID 045-112" });
-            const [roster, setRoster] = useState([{ id: 1, name: squadData.leaderName, rank: squadData.leaderRank, role: "CDG", status: "APTE" }]);
             const [newSoldier, setNewSoldier] = useState({ name: "", rank: "Soldat", role: "GV" });
 
             useEffect(() => {
@@ -452,7 +468,7 @@
         // --- RACINE ---
         const App = () => {
             const [user, setUser] = useState(null);
-            const [squadData, setSquadData] = useState(null);
+            const [squadData, setSquadData] = useStickyState(null, 'squad_session');
 
             useEffect(() => {
                 if(!auth) { setUser({uid:'offline'}); return; }
@@ -465,6 +481,7 @@
                     try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'active_squads', squadData.name)); } catch(e) {}
                 }
                 setSquadData(null);
+                window.localStorage.clear(); // On nettoie tout pour changer proprement de squad
             };
 
             if (!user) return <div className="h-screen bg-black flex items-center justify-center text-emerald-500 font-mono tracking-widest animate-pulse">INITIALISATION SYSTÈME...</div>;
