@@ -200,6 +200,24 @@
             </div>
         );
 
+        const HeaderClock = () => {
+            const [date, setDate] = useState(new Date());
+            useEffect(() => {
+                const timer = setInterval(() => setDate(new Date()), 1000);
+                return () => clearInterval(timer);
+            }, []);
+            
+            const timeStr = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+            const dateStr = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'numeric' });
+
+            return (
+                <div className="text-right mr-2 flex flex-col items-end border-r border-emerald-900 pr-2">
+                    <div className="font-mono font-bold text-emerald-500 text-lg leading-none">{timeStr}</div>
+                    <div className="text-[9px] text-emerald-700 uppercase tracking-widest text-right">LOCAL / {dateStr}</div>
+                </div>
+            );
+        };
+
         // --- COMPONENTS APPLICATIFS ---
         const SitrepModal = ({ onClose, type, onConfirm, roster }) => {
             const [step, setStep] = useState(0);
@@ -383,19 +401,31 @@
                 const today = new Date().toLocaleDateString('fr-FR');
                 let txt = `MINISTÈRE DES ARMÉES\nOBJET : COMPTE-RENDU D'OPÉRATION "${missionData.name}"\nUNITÉ : GROUPE ${squadData.name}\nDATE : ${today}\n\nMon Capitaine,\n\nJ'ai l'honneur de vous rendre compte de la mission effectuée ce jour par le groupe ${squadData.name} dans le secteur ${missionData.location}. L'objectif était de : ${missionData.objective}.\n\nDÉROULEMENT DES FAITS :\n`;
                 
-                const fmtVol = (v) => v ? (v.includes("Isolé")?"un individu isolé":v.includes("Binôme")?"un binôme":v.includes("Équipe")?"une équipe":v.includes("Groupe")?"un groupe":v) : "volume indéterminé";
+                const fmtVol = (v) => v ? (v.includes("Isolé")?"un individu isolé":v.includes("Binôme")?"un binôme":v.includes("Équipe")?"une équipe":v.includes("Groupe")?"un groupe de combat":v.includes("Section")?"une section":v) : "un volume indéterminé";
                 const fmtMen = (m) => m ? (m==="Infanterie"?"d'infanterie":m==="Sniper"?"de tireurs d'élite":`de type ${m.toLowerCase()}`) : "hostile";
                 const fmtDist = (d) => d ? (d.includes("<50m")?"au contact immédiat":d.includes("100m")?"à courte distance":d.includes("300m")?"à moyenne distance":"à longue distance") : "";
 
                 if (logs.length === 0) txt += "Aucun événement notable.\n";
                 else logs.slice().reverse().forEach(l => {
                     let s = ""; const d = l.raw;
-                    if(l.type === 'CONTACT') s = `À ${l.missionTime}, observation ${de(fmtVol(d.volume))} ${fmtMen(d.menace)} au ${d.direction}, ${fmtDist(d.distance)}.`;
-                    else if(l.type === 'FEU') s = `À ${l.missionTime}, ouverture du feu sur ${fmtVol(d.volume)} ${fmtMen(d.menace)} au ${d.direction}.`;
-                    else if(l.type === 'SANTE') s = `À ${l.missionTime}, incident sanitaire: ${d.soldatData.name} est ${d.etat}.`;
-                    else if(l.type === 'MVT') s = `À ${l.missionTime}, mouvement: ${d.typeMvt}.`;
-                    else if(l.type === 'DIVERS') s = `À ${l.missionTime}, renseignement: "${d.details}".`;
-                    else s = `À ${l.missionTime}: ${d.details||l.message}.`;
+                    const t = l.missionTime;
+                    
+                    if(l.type === 'CONTACT') s = `À ${t}, nos éléments ont établi un visuel sur ${fmtVol(d.volume)} ${fmtMen(d.menace)}. La cible a été localisée au ${d.direction}, ${fmtDist(d.distance)}.`;
+                    else if(l.type === 'FEU') s = `À ${t}, prise à partie ${de(fmtVol(d.volume))} ${fmtMen(d.menace)} au ${d.direction}. Le groupe a riposté immédiatement.`;
+                    else if(l.type === 'SANTE') {
+                        let etatTxt = d.etat;
+                        if (d.etat === "Blessé Léger") etatTxt = "a été blessé légèrement";
+                        if (d.etat === "Blessé Grave") etatTxt = "a été blessé gravement";
+                        if (d.etat === "Inconscient") etatTxt = "est inconscient";
+                        if (d.etat === "DCD") etatTxt = "est décédé";
+                        s = `À ${t}, alerte sanitaire : le ${d.soldatData.name} ${etatTxt}. Prise en charge par l'auxiliaire sanitaire.`;
+                    }
+                    else if(l.type === 'MVT') s = `À ${t}, le groupe a effectué un mouvement tactique : ${d.typeMvt.toLowerCase()}.`;
+                    else if(l.type === 'RAS') s = `Vers ${t}, reconnaissance de zone terminée. Rien à signaler.`;
+                    else if(l.type === 'APPUI') s = `À ${t}, mise en place d'un dispositif de surveillance et d'appui.`;
+                    else if(l.type === 'TRANS') s = `À ${t}, contrôle des liaisons radio effectué.`;
+                    else if(l.type === 'DIVERS') s = `À ${t}, renseignement divers : "${d.details}".`;
+                    else s = `À ${t} : ${d.details||l.message}.`;
                     txt += `${s}\n`;
                 });
                 txt += `\nBILAN:\nEffectif: ${roster.length}. Opérationnels: ${roster.filter(s=>s.status==='APTE').length}.\n`;
@@ -420,6 +450,7 @@
                             <div><h1 className="text-xl font-black uppercase tracking-[0.15em] text-emerald-400" style={{textShadow:'0 0 10px rgba(52,211,153,0.5)'}}>{squadData.name} ACTUAL</h1><div className="text-[10px] text-emerald-700 font-mono uppercase tracking-widest">{missionActive ? "/// TRANSMISSION CRYPTÉE ///" : "/// VEILLE RADIO ///"}</div></div>
                         </div>
                         <div className="flex items-center gap-4">
+                            <HeaderClock />
                             <div className="text-right"><div className="font-mono font-bold text-emerald-400 text-xl leading-none">{formatTime(missionTime)}</div><div className="text-[8px] text-emerald-800 uppercase tracking-widest text-right">T-OPS</div></div>
                             <button onClick={onLogout} className="text-emerald-800 hover:text-red-500 border border-emerald-900 p-2 hover:bg-red-950/20"><Icon name="LogOut" size={20} /></button>
                         </div>
@@ -451,7 +482,7 @@
                             </div>
                         )}
                     </main>
-                    <nav className="fixed bottom-0 left-0 right-0 bg-slate-950 border-t border-emerald-900 p-2 pb-safe z-50">
+                    <nav className="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-emerald-900 p-2 pb-safe z-50">
                         <div className="max-w-4xl mx-auto grid grid-cols-4 gap-1">
                             {['briefing', 'roster', 'ops', 'aar'].map(tab => (
                                 <button key={tab} onClick={() => setActiveTab(tab)} className={`flex flex-col items-center p-2 transition-all ${activeTab===tab ? 'bg-emerald-900/30 text-emerald-400 border-t-2 border-emerald-500' : 'text-emerald-900 hover:text-emerald-600'}`}>
