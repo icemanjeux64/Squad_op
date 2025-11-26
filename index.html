@@ -235,9 +235,7 @@
             );
         };
 
-        // --- DASHBOARDS ---
-        
-        // DASHBOARD ÉTAT-MAJOR (HQ)
+        // --- DASHBOARD ÉTAT-MAJOR (HQ) ---
         const HQDashboard = ({ onLogout, user }) => {
             const [squadsData, setSquadsData] = useState([]);
             const [requests, setRequests] = useState([]);
@@ -436,6 +434,23 @@
                     onSelectSquad({ name: joiningSquad, leaderRank, leaderName, isHQ: false });
                 }
             };
+            
+             const handleForceExpel = async () => {
+                if (confirm("CONFIRMATION : EXPULSER L'ÉTAT-MAJOR EN PLACE ? (ACTION IMMÉDIATE)")) {
+                    if (db) {
+                        try {
+                            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'active_squads', 'HQ_MAIN'));
+                            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'history_logs'), { 
+                                type: "COUP_ETAT", 
+                                message: "ALERTE SÉCURITÉ : L'État-Major a été destitué de force.", 
+                                timestamp: Date.now() 
+                            });
+                        } catch (e) {
+                            alert("ERREUR TECHNIQUE");
+                        }
+                    }
+                }
+            };
 
             if (joiningSquad) {
                 const isSectionSetup = joiningSquad === 'SECTION';
@@ -488,6 +503,15 @@
                             <img src="Logo.png" className="h-5 w-5 object-contain" alt="HQ" /> 
                             {hqOnline ? `DEMANDE ACCÈS ÉTAT-MAJOR (QG ACTIF: ${hqInfo?.leaderName || 'INCONNU'})` : "PRENDRE LE COMMANDEMENT (QG LIBRE)"}
                         </button>
+                        
+                         {hqOnline && (
+                            <button 
+                                onClick={handleForceExpel} 
+                                className="w-full py-2 mt-1 bg-red-950/30 border border-red-800 text-red-600 hover:bg-red-900/50 text-xs font-bold tracking-widest flex items-center justify-center gap-2"
+                            >
+                                <Icon name="Trash2" size={14} /> FORCER L'EXPULSION DU QG
+                            </button>
+                        )}
                         
                         {hqOnline && (
                             <button onClick={() => setJoiningSquad('SECTION')} className="w-full py-3 bg-amber-900/20 border border-amber-600 text-amber-400 hover:bg-amber-800/40 font-bold tracking-widest text-sm shadow-[0_0_15px_rgba(245,158,11,0.3)] flex items-center justify-center gap-2">
