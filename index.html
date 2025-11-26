@@ -309,7 +309,7 @@
         const GRADES = ["Recrue", "Sdt", "1.Cl", "Cpl", "Cch", "Sgt", "Sgt-C", "Adj", "Adj-C", "Maj", "Aspi", "S-Lt", "Lt", "Cne"];
         const ROLES = ["Fusilier", "Médic", "AT", "MG", "Radio", "Sapeur", "Sniper", "Pilote", "Chef de Groupe"];
         
-        // Liste de suggestion SL
+        // Liste de suggestion SL (modifiable)
         const BASE_SL_SUGGESTIONS = ["Nico75", "-Sangui-", "[VDK]KEBABIERdu96", "ALEX2801CH", "ATOMIC W4RRIOR", "Benjamin", "Can am", "CCH.Le_S", "Darkspartan9337", "EagleClaw", "Fez", "Five Scream", "Flo.", "Gin", "Hybris95", "Jej", "KenBlook5129", "l Ryüjinn l", "Lapuchk6766", "LittleEvil", "lkurd26", "MASKER84", "Mirai", "MULTIFRUIT1492", "Natrium", "Nettoyeur", "oahhmz", "Panchito6097", "Pixc361", "Pokeur", "Poulet998", "Sucreblé", "Tatar", "Teckil", "TF3 SLAYER", "Théotime", "Tinky Winky", "Tong", "valoche_0", "ValouTekmi", "Waze toxic", "Exam94", "xYourGalactic-I", "Yogun", "Zl Deathstro", "zlatanqlf"];
 
         // --- FIREBASE INIT ---
@@ -328,7 +328,7 @@
         const db = getFirestore(app);
         const appId = (typeof __app_id !== 'undefined') ? __app_id : 'squadnet-ops';
 
-        // --- STATE MANAGEMENT ---
+        // --- STATE MANAGEMENT SIMPLE ---
         const state = {
             user: null,
             role: null, // 'STAFF' ou 'SL'
@@ -337,11 +337,10 @@
             squads: {},
             opSettings: {},
             logs: [],
-            slTab: 'TACTIQUE',
+            slTab: 'TACTIQUE', // TACTIQUE, ESCOUADE, RAPPORT, LIAISON
             activeSitrepForm: null,
             sitrepData: {},
-            selectedSquadId: null,
-            activeReportId: null
+            selectedSquadId: null // Pour le modal login
         };
 
         // --- APP LOGIC ---
@@ -349,10 +348,11 @@
             init: function() {
                 this.bindEvents();
                 this.initAuth();
-                this.render();
+                this.render(); // Initial render
             },
 
             bindEvents: function() {
+                // Expose methods globally for HTML onclicks
                 window.app = this;
             },
 
@@ -361,13 +361,16 @@
                     state.user = u;
                     if (u) {
                         this.startListeners();
+                        // Auto-reconnect logic
                         if (state.pseudo && state.view === 'LANDING') {
+                            // On attend que les squads soient chargés par le listener
                             setTimeout(() => this.checkAutoLogin(), 1000); 
                         }
                     }
                     this.render();
                 });
 
+                // Sign In
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     try { await signInWithCustomToken(auth, __initial_auth_token); } 
                     catch (e) { await signInAnonymously(auth); }
@@ -377,17 +380,20 @@
             },
 
             startListeners: function() {
+                // Squads
                 onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'squads'), (snapshot) => {
                     const data = {};
                     snapshot.docs.forEach(doc => data[doc.id] = doc.data());
                     state.squads = data;
-                    this.checkAutoLogin();
+                    this.checkAutoLogin(); // Check again on data update
                     this.render();
                 });
+                // Settings path fixed
                 onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'config', 'ops'), (d) => {
                     state.opSettings = d.data() || {};
                     this.render();
                 });
+                // Logs
                 const qLogs = query(collection(db, 'artifacts', appId, 'public', 'data', 'mission_logs'), orderBy('timestamp', 'desc'));
                 onSnapshot(qLogs, (snapshot) => {
                     state.logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -397,18 +403,24 @@
 
             checkAutoLogin: function() {
                 if (state.view !== 'LANDING' || !state.pseudo) return;
+                // Si le joueur est un SL actif dans une escouade
                 const myActiveSquad = Object.entries(state.squads).find(([id, s]) => s.sl === state.pseudo && s.status === 'ACTIVE');
                 if (myActiveSquad) {
                     state.role = 'SL';
                     state.view = 'SL';
                     this.render();
+                } else if (STAFF_LIST.includes(state.pseudo)) {
+                    // Optional auto-login staff
                 }
             },
 
-            // --- ACTIONS ---
+            // --- NAVIGATION & LOGIN ---
             
             openLoginModal: function(type) {
-                document.getElementById('login-modal').classList.remove('hidden');
+                const modal = document.getElementById('login-modal');
+                const content = document.getElementById('modal-content');
+                modal.classList.remove('hidden');
+                
                 let html = '';
                 if (type === 'STAFF') {
                     html = `
@@ -420,16 +432,29 @@
                     const squad = SQUADS_CONFIG.find(s => s.id === state.selectedSquadId);
                     const sData = state.squads[state.selectedSquadId];
                     const isAssigned = sData.status === 'ASSIGNED';
+                    
                     html = `
                         <div class="mb-6"><i data-lucide="target" class="w-16 h-16 text-emerald-600 mx-auto"></i><h2 class="text-xl font-bold text-white uppercase">ID SQUAD LEADER</h2><div class="text-emerald-500 font-bold">${squad.name}</div></div>
                     `;
+
                     if (isAssigned) {
-                        html += `<p class="text-slate-500 text-xs uppercase mb-2">Opérateur Assigné</p><div class="text-2xl font-bold text-white bg-white/5 p-4 border border-white/10 mb-6">${sData.sl}</div><button onclick="window.app.login('SL_CONFIRM')" class="w-full bg-emerald-900/80 hover:bg-emerald-800 text-white font-bold py-3 border border-emerald-700">CONFIRMER IDENTITÉ</button>`;
+                        html += `
+                            <p class="text-slate-500 text-xs uppercase mb-2">Opérateur Assigné</p>
+                            <div class="text-2xl font-bold text-white bg-white/5 p-4 border border-white/10 mb-6">${sData.sl}</div>
+                            <button onclick="window.app.login('SL_CONFIRM')" class="w-full bg-emerald-900/80 hover:bg-emerald-800 text-white font-bold py-3 border border-emerald-700">CONFIRMER IDENTITÉ</button>
+                        `;
                     } else {
-                        html += `<div class="relative mb-4"><input list="sl-suggestions-list" type="text" id="login-pseudo" class="w-full bg-black border border-slate-700 p-4 text-white text-center outline-none uppercase" placeholder="VOTRE GAMERTAG" value="${state.pseudo}"><datalist id="sl-suggestions-list">${BASE_SL_SUGGESTIONS.map(s => `<option value="${s}">`).join('')}</datalist></div><button onclick="window.app.login('SL_MANUAL')" class="w-full bg-blue-900/80 hover:bg-blue-800 text-white font-bold py-3 border border-blue-700">VALIDER</button>`;
+                        html += `
+                            <div class="relative mb-4">
+                                <input list="sl-suggestions-list" type="text" id="login-pseudo" class="w-full bg-black border border-slate-700 p-4 text-white text-center outline-none uppercase" placeholder="VOTRE GAMERTAG" value="${state.pseudo}">
+                                <datalist id="sl-suggestions-list">${BASE_SL_SUGGESTIONS.map(s => `<option value="${s}">`).join('')}</datalist>
+                            </div>
+                            <div id="new-profile-alert" class="text-xs text-yellow-500 mb-4 hidden">Nouveau profil détecté</div>
+                            <button onclick="window.app.login('SL_MANUAL')" class="w-full bg-blue-900/80 hover:bg-blue-800 text-white font-bold py-3 border border-blue-700">VALIDER</button>
+                        `;
                     }
                 }
-                document.getElementById('modal-content').innerHTML = html;
+                content.innerHTML = html;
                 lucide.createIcons();
             },
 
@@ -446,6 +471,7 @@
             login: async function(mode) {
                 const pseudoInput = document.getElementById('login-pseudo');
                 const pseudo = pseudoInput ? pseudoInput.value.trim() : state.squads[state.selectedSquadId]?.sl;
+                
                 if (!pseudo) return alert("Identifiant requis");
 
                 if (mode === 'STAFF') {
@@ -453,15 +479,24 @@
                     state.role = 'STAFF';
                     state.view = 'STAFF';
                 } else {
+                    // SL Login
                     const squadId = state.selectedSquadId;
                     const squadData = state.squads[squadId];
+                    
                     await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), {
-                        ...squadData, sl: pseudo, name: SQUADS_CONFIG.find(s => s.id === squadId).name,
-                        startTime: new Date().toISOString(), status: 'ACTIVE', members: squadData.members || [], missionHistory: []
+                        ...squadData,
+                        sl: pseudo,
+                        name: SQUADS_CONFIG.find(s => s.id === squadId).name,
+                        startTime: new Date().toISOString(),
+                        status: 'ACTIVE',
+                        members: squadData.members || [],
+                        missionHistory: []
                     }, { merge: true });
+
                     state.role = 'SL';
                     state.view = 'SL';
                 }
+
                 state.pseudo = pseudo;
                 localStorage.setItem('fof_ops_pseudo', pseudo);
                 this.closeModal();
@@ -477,107 +512,58 @@
                 this.render();
             },
 
-            // --- EM LOGIC ---
+            // --- UPDATES & ACTIONS ---
+
             updateSettings: async function(key, val) {
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'config', 'ops'), { ...state.opSettings, [key]: val }, { merge: true });
-            },
-
-            addCDS: async function() {
-                const count = (state.opSettings.active_cds_count || 0) + 1;
-                await this.updateSettings('active_cds_count', count);
-            },
-
-            toggleCDS: async function(squadId, cdsIndex) {
-                const squad = state.squads[squadId];
-                const currentCds = `CDS ${cdsIndex}`;
-                const newCds = (squad.cds_owner === currentCds) ? null : currentCds;
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), { cds_owner: newCds }, { merge: true });
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'config', 'ops'), {
+                    ...state.opSettings, [key]: val
+                }, { merge: true });
             },
 
             updateSquad: async function(squadId, field, val) {
+                // SAFE CHECK: Check if squad data exists before accessing properties
                 const currentSquad = state.squads[squadId] || {};
                 const updates = { [field]: val };
+                // Logic reset
                 if (field === 'sl') {
                     if (val === "") {
-                        updates.status = 'DISPO'; updates.startTime = null; updates.sitrep = ''; updates.rtbStatus = 'NONE'; updates.junctionFreq = ''; updates.members = []; updates.effectif = 0;
+                        updates.status = 'DISPO';
+                        updates.startTime = null;
+                        updates.sitrep = '';
+                        updates.rtbStatus = 'NONE';
+                        updates.junctionFreq = '';
                     } else if (currentSquad.status !== 'ACTIVE') {
-                        updates.status = 'ASSIGNED'; updates.startTime = null;
+                        updates.status = 'ASSIGNED';
+                        updates.startTime = null;
                     }
                 }
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), updates, { merge: true });
             },
 
-            endMission: async function(squadId, note, outcome = "UNKNOWN") {
+            endMission: async function(squadId, report = "R.A.S", outcome = "UNKNOWN") {
                 const sData = state.squads[squadId];
-                
-                // Generation du rapport final propre avec le générateur
-                const reportFull = this.generateMilitaryReport(sData, note);
-
+                // Log
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'mission_logs'), {
                     sl: sData.sl, squad: sData.name, objective: sData.objective,
                     startTime: sData.startTime, endTime: new Date().toISOString(),
-                    report: reportFull, timestamp: serverTimestamp(), managedBy: state.pseudo, outcome: outcome
+                    report: report, timestamp: serverTimestamp(), managedBy: state.pseudo,
+                    outcome: outcome // Success/Failure
                 });
-
+                // Reset
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), {
                     sl: '', objective: '', status: 'DISPO', startTime: null, sitrep: '',
-                    members: [], effectif: 0, missionHistory: [], rtbStatus: 'NONE', junctionFreq: '', cds_owner: null
+                    members: [], missionHistory: [], rtbStatus: 'NONE', junctionFreq: ''
                 });
                 
                 if (state.role === 'SL') this.logout();
             },
 
-            // --- GENERATEUR DE RAPPORT MILITAIRE ---
-            generateMilitaryReport: function(squad, userNote) {
-                let report = `RAPPORT DE MISSION / PATROUILLE\n`;
-                report += `=================================\n`;
-                report += `UNITÉ : ${squad.name} (${squad.sl})\n`;
-                report += `OBJECTIF : ${squad.objective || 'N/A'}\n`;
-                report += `DATE : ${new Date().toLocaleDateString()}\n\n`;
-                
-                report += `1. IDENTIFICATION / EFFECTIFS\n`;
-                report += `- Chef de Groupe : ${squad.sl}\n`;
-                report += `- Effectif total : ${squad.effectif}\n`;
-                if (squad.members && squad.members.length > 0) {
-                    report += `- Pax : ${squad.members.map(m => `${m.grade} ${m.name} (${m.role})`).join(', ')}\n`;
-                }
-                report += `\n`;
-
-                report += `2. CHRONOLOGIE DES ÉVÉNEMENTS\n`;
-                const history = squad.missionHistory || [];
-                if (history.length === 0) {
-                    report += `- R.A.S (Aucun événement noté)\n`;
-                } else {
-                    history.forEach(h => {
-                        const time = new Date(h.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                        let content = h.content;
-                        
-                        // Re-formatting "Beauty"
-                        if (content.startsWith('CONTACT:')) {
-                            content = content.replace('CONTACT:', 'CONTACT ENNEMI -');
-                        } else if (content.startsWith('SANITAIRE:')) {
-                            content = content.replace('SANITAIRE:', 'BILAN SANITAIRE -');
-                        } else if (content.startsWith('LOG:')) {
-                            content = content.replace('LOG:', 'DEMANDE LOGISTIQUE -');
-                        } else if (content === 'DÉPART MISSION') {
-                            content = 'DÉPART MISSION - SORTIE DE BASE';
-                        } else if (content === 'RETOUR BASE') {
-                            content = 'RETOUR BASE - FIN DE MOUVEMENT';
-                        }
-
-                        report += `[${time}] ${content}\n`;
-                    });
-                }
-                report += `\n`;
-
-                report += `3. SYNTHÈSE / CONCLUSION\n`;
-                report += `${userNote || "Aucune note particulière ajoutée."}\n`;
-                report += `=================================\n`;
-                return report;
-            },
-
             // --- SL ACTIONS ---
-            setTab: function(tab) { state.slTab = tab; this.render(); },
+            
+            setTab: function(tab) {
+                state.slTab = tab;
+                this.render();
+            },
 
             openSitrepModal: function(formType, defaultLabel) {
                 state.activeSitrepForm = formType;
@@ -585,54 +571,57 @@
                 this.renderSitrepModal();
                 document.getElementById('sitrep-modal').classList.remove('hidden');
             },
+
             closeSitrepModal: function() {
                 document.getElementById('sitrep-modal').classList.add('hidden');
                 state.activeSitrepForm = null;
             },
 
             requestRTB: async function(squadId) {
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), { rtbStatus: 'REQUESTED', sitrep: 'DEMANDE DE RTB', missionHistory: arrayUnion({ type: 'ALERT', content: "REQ RTB", time: new Date().toISOString() }) });
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), {
+                    rtbStatus: 'REQUESTED',
+                    sitrep: 'DEMANDE DE RTB',
+                    missionHistory: arrayUnion({ type: 'ALERT', content: "REQ RTB", time: new Date().toISOString() })
+                });
             },
+
             approveRTB: async function(squadId, approved) {
                 const status = approved ? 'APPROVED' : 'DENIED';
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), { rtbStatus: status, missionHistory: arrayUnion({ type: 'CMD', content: approved ? 'RTB ACCORDÉ' : 'RTB REFUSÉ', time: new Date().toISOString() }) });
-            },
-
-            // Helper pour construire les boutons de sélection
-            renderOptionGrid: function(key, options, current) {
-                return `<div class="grid grid-cols-2 gap-2">
-                    ${options.map(opt => `
-                        <button onclick="window.app.setSitrepData('${key}', '${opt}')" class="p-4 border ${current === opt ? 'bg-white text-black font-bold border-white' : 'bg-black text-slate-400 border-slate-700 hover:border-white'} uppercase text-xs transition-colors">${opt}</button>
-                    `).join('')}
-                </div>`;
-            },
-
-            setSitrepData: function(key, val) {
-                state.sitrepData[key] = val;
-                this.renderSitrepModal(); // Re-render to update UI selection
+                const msg = approved ? 'RTB ACCORDÉ' : 'RTB REFUSÉ - MAINTENEZ POSITION';
+                
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), { 
+                    rtbStatus: status,
+                    missionHistory: arrayUnion({ type: 'CMD', content: msg, time: new Date().toISOString() })
+                });
             },
 
             submitSitrep: async function() {
                 const squadId = Object.keys(state.squads).find(k => state.squads[k].sl === state.pseudo);
                 if (!squadId) return;
-                const d = state.sitrepData;
-                const getVal = (id) => document.getElementById(id)?.value || '';
+
                 let msg = "";
+                const data = state.sitrepData;
+                
+                // Build message based on form inputs (collected via onchange events stored in state.sitrepData via DOM)
+                const getVal = (id) => document.getElementById(id)?.value || '';
+                const getCheck = (id) => document.getElementById(id)?.checked;
 
                 if (state.activeSitrepForm === 'CONTACT') {
-                    msg = `CONTACT: ${d.type||'?'} [${d.count||'?'}] (${d.attitude||'?'}) - Dist: ${getVal('sr-dist')}m Az: ${getVal('sr-azi')}`;
+                    msg = `CONTACT: ${getVal('sr-count')}x ${getVal('sr-type')} (${getVal('sr-attitude')}) | Dist: ${getVal('sr-dist')}m | Azi: ${getVal('sr-azi')}`;
                 } else if (state.activeSitrepForm === 'MEDICAL') {
-                    msg = `SANITAIRE: A:${getVal('sr-alpha')} / B:${getVal('sr-bravo')} - EVASAN: ${d.evasan?'OUI':'NON'} - LZ: ${getVal('sr-lz')}`;
+                    msg = `SANITAIRE: A:${getVal('sr-alpha')} / B:${getVal('sr-bravo')} | EVASAN: ${getCheck('sr-evasan')?'OUI':'NON'} | LZ: ${getVal('sr-lz')}`;
                 } else if (state.activeSitrepForm === 'LOG') {
-                    msg = `LOG: ${getVal('sr-item')} (${d.urgency||'?'}) à ${getVal('sr-loc')}`;
+                    msg = `LOG: ${getVal('sr-item')} (${getVal('sr-urgency')}) à ${getVal('sr-loc')}`;
                 } else {
-                    msg = getVal('sr-manual') || d.defaultMsg;
+                    msg = getVal('sr-manual') || data.defaultMsg;
                 }
 
-                const ts = new Date().toISOString();
+                const timestamp = new Date().toISOString();
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), {
-                    sitrep: msg, lastSitrepTime: ts, missionHistory: arrayUnion({ type: 'SITREP', content: msg, time: ts })
+                    sitrep: msg, lastSitrepTime: timestamp,
+                    missionHistory: arrayUnion({ type: 'SITREP', content: msg, time: timestamp })
                 });
+
                 this.closeSitrepModal();
             },
 
@@ -643,37 +632,27 @@
                 members.push({ name: 'SOLDAT', grade: 'Sdt', role: 'Fusilier' });
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), { members, effectif: members.length });
             },
+
             updateMember: async function(idx, field, val) {
                 const squadId = Object.keys(state.squads).find(k => state.squads[k].sl === state.pseudo);
                 const members = [...state.squads[squadId].members];
                 members[idx][field] = val;
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), { members });
             },
+
             removeMember: async function(idx) {
                 const squadId = Object.keys(state.squads).find(k => state.squads[k].sl === state.pseudo);
                 const members = state.squads[squadId].members.filter((_, i) => i !== idx);
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), { members, effectif: members.length });
             },
+
             sitrepAction: function(id, form, label) {
                 const squadId = Object.keys(state.squads).find(k => state.squads[k].sl === state.pseudo);
-                
-                if (id === 'rtb') { 
-                    if(confirm("Demander RTB à l'EM ?")) this.requestRTB(squadId); 
-                } else if (id === 'depart') {
-                    this.submitSitrepDirect(squadId, 'DÉPART MISSION');
-                } else if (id === 'retour') {
-                    this.submitSitrepDirect(squadId, 'RETOUR BASE');
-                } else { 
-                    this.openSitrepModal(form, label); 
+                if (id === 'rtb') {
+                    if(confirm("Demander RTB à l'EM ?")) this.requestRTB(squadId);
+                } else {
+                    this.openSitrepModal(form, label);
                 }
-            },
-            
-            // Helper pour envoyer un SITREP direct sans modal (Top Départ / Retour)
-            submitSitrepDirect: async function(squadId, msg) {
-                const ts = new Date().toISOString();
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), {
-                    sitrep: msg, lastSitrepTime: ts, missionHistory: arrayUnion({ type: 'SITREP', content: msg, time: ts })
-                });
             },
 
             sendEndMission: function() {
@@ -682,45 +661,116 @@
                 const status = document.querySelector('input[name="mission-status"]:checked').value;
                 if(confirm("Clôturer la mission ?")) this.endMission(squadId, note, status);
             },
+
+            // --- REPORT MODAL ACTIONS (STAFF) ---
             openReportModal: function(logId) {
                 state.activeReportId = logId;
                 const log = state.logs.find(l => l.id === logId);
                 if(!log) return;
-                document.getElementById('report-modal').classList.remove('hidden');
-                document.getElementById('report-modal-content').innerHTML = `<div class="text-xs text-slate-500 mb-2">${new Date(log.timestamp.seconds*1000).toLocaleString()}</div>${log.report}`;
+
+                const modal = document.getElementById('report-modal');
+                const content = document.getElementById('report-modal-content');
+                
+                modal.classList.remove('hidden');
+                content.innerHTML = `
+                    <div class="mb-4 border-b border-white/10 pb-2">
+                        <div class="text-xs text-slate-500 uppercase">MISSION</div>
+                        <div class="text-lg font-bold text-white uppercase">${log.objective}</div>
+                        <div class="text-xs text-slate-500 uppercase mt-1">SQUAD LEADER</div>
+                        <div class="text-md font-bold text-[#66fcf1] uppercase">${log.sl} (${log.squad})</div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="text-xs text-slate-500 uppercase mb-1">RESULTAT</div>
+                        <div class="text-md font-bold uppercase ${log.outcome === 'SUCCESS' ? 'text-emerald-500' : (log.outcome === 'FAILURE' ? 'text-red-500' : 'text-slate-400')}">${log.outcome === 'SUCCESS' ? 'SUCCÈS' : (log.outcome === 'FAILURE' ? 'ÉCHEC' : 'INCONNU')}</div>
+                    </div>
+                    <div class="bg-black/50 p-3 border border-white/10">
+                        <div class="text-xs text-slate-500 uppercase mb-2">RAPPORT</div>
+                        <div class="whitespace-pre-wrap text-sm">${log.report}</div>
+                    </div>
+                    <div class="text-xs text-slate-600 mt-4 text-right font-mono">
+                        ${log.timestamp ? new Date(log.timestamp.seconds * 1000).toLocaleString() : ''}
+                    </div>
+                `;
                 lucide.createIcons();
             },
-            closeReportModal: function() { document.getElementById('report-modal').classList.add('hidden'); state.activeReportId = null; },
-            copyReport: function() {
-                const log = state.logs.find(l => l.id === state.activeReportId);
-                if(log) navigator.clipboard.writeText(log.report).then(() => alert("Copié !"));
+
+            closeReportModal: function() {
+                document.getElementById('report-modal').classList.add('hidden');
+                state.activeReportId = null;
             },
 
-            // --- RENDERS ---
+            copyReport: function() {
+                const log = state.logs.find(l => l.id === state.activeReportId);
+                if(!log) return;
+                const text = `RAPPORT MISSION ${log.objective}\nSL: ${log.sl} (${log.squad})\nRESULTAT: ${log.outcome}\nDATE: ${new Date(log.timestamp.seconds*1000).toLocaleString()}\n\nCONTENU:\n${log.report}`;
+                navigator.clipboard.writeText(text).then(() => alert("Rapport copié !"));
+            },
+
+            // --- RENDER ENGINE ---
             render: function() {
+                const root = document.getElementById('app');
+                // Remove loading
                 const loader = document.getElementById('loading-screen');
                 if (loader && state.user) loader.remove();
+
+                // View Routing
                 if (state.view === 'LANDING') this.renderLanding();
                 else if (state.view === 'STAFF') this.renderStaff();
                 else if (state.view === 'SL') this.renderSL();
+
                 lucide.createIcons();
             },
+
             renderLanding: function() {
-                document.getElementById('app').innerHTML = document.getElementById('tpl-landing').innerHTML;
+                const root = document.getElementById('app');
+                if (!document.getElementById('squad-grid-landing')) {
+                    root.innerHTML = document.getElementById('tpl-landing').innerHTML;
+                }
+                
+                // Render Squads Grid
                 const container = document.getElementById('squad-grid-landing');
-                container.innerHTML = SQUADS_CONFIG.map(s => {
-                    const d = state.squads[s.id] || {};
-                    let cls = "border-slate-800 bg-slate-900/30 hover:border-white/20 cursor-pointer";
-                    let txt = "DISPO", col = "text-mil-green";
-                    if(d.status === 'ACTIVE') { cls = "border-slate-800 bg-black opacity-50 cursor-not-allowed"; txt = "EN MISSION"; col = "text-mil-red"; }
-                    else if(d.status === 'ASSIGNED') { cls = "border-mil-yellow/50 bg-yellow-900/10 animate-pulse cursor-pointer"; txt = "ORDRE REÇU"; col = "text-mil-yellow"; }
-                    return `<button ${d.status === 'ACTIVE' ? '' : `onclick="window.app.openSLLogin('${s.id}')"`} class="relative p-4 text-left transition-all border h-32 flex flex-col justify-between group ${cls}" ${d.status==='ACTIVE'?'disabled':''}>
-                        <div class="flex justify-between items-start w-full"><span class="text-xs font-bold uppercase ${col} tracking-wider">${txt}</span><div class="w-2 h-2 rounded-full ${s.color.replace('bg-', 'bg-')}"></div></div>
-                        <div><h3 class="text-2xl font-black text-white uppercase">${s.name}</h3><p class="text-[10px] text-slate-500 font-mono">${s.freq} MHz</p></div>
-                        ${d.sl ? `<div class="absolute bottom-2 right-2 text-right"><div class="text-[9px] text-slate-500 uppercase">Leader</div><div class="text-xs font-bold text-white uppercase truncate max-w-[100px]">${d.sl}</div></div>` : ''}
-                    </button>`;
-                }).join('');
+                if(container) {
+                    container.innerHTML = SQUADS_CONFIG.map(s => {
+                        const data = state.squads[s.id] || {};
+                        const isActive = data.status === 'ACTIVE';
+                        const isAssigned = data.status === 'ASSIGNED';
+                        
+                        let classes = `relative p-4 text-left transition-all border h-32 flex flex-col justify-between group `;
+                        let statusTxt = "DISPO";
+                        let statusCol = "text-mil-green";
+
+                        if (isAssigned) {
+                            classes += "border-mil-yellow/50 bg-yellow-900/10 animate-pulse cursor-pointer hover:border-white/20";
+                            statusTxt = "ORDRE REÇU";
+                            statusCol = "text-mil-yellow";
+                        } else if (isActive) {
+                            classes += "border-slate-800 bg-black opacity-50 cursor-not-allowed";
+                            statusTxt = "EN MISSION";
+                            statusCol = "text-mil-red";
+                        } else {
+                            classes += "border-slate-800 bg-slate-900/30 hover:border-white/20 cursor-pointer";
+                        }
+
+                        // Onclick - USING openSLLogin WRAPPER
+                        const action = isActive ? '' : `onclick="window.app.openSLLogin('${s.id}')"`;
+
+                        return `
+                        <button ${action} class="${classes}" ${isActive ? 'disabled' : ''}>
+                            <div class="flex justify-between items-start w-full">
+                                <span class="text-xs font-bold uppercase ${statusCol} tracking-wider">${statusTxt}</span>
+                                <div class="w-2 h-2 rounded-full ${s.color.replace('bg-', 'bg-')}"></div>
+                            </div>
+                            <div>
+                                <h3 class="text-2xl font-black text-white uppercase">${s.name}</h3>
+                                <p class="text-[10px] text-slate-500 font-mono">${s.freq} MHz</p>
+                            </div>
+                            ${data.sl ? `<div class="absolute bottom-2 right-2 text-right"><div class="text-[9px] text-slate-500 uppercase">Leader</div><div class="text-xs font-bold text-white uppercase truncate max-w-[100px]">${data.sl}</div></div>` : ''}
+                        </button>
+                        `;
+                    }).join('');
+                }
             },
+
             renderStaff: function() {
                 const root = document.getElementById('app');
                 if (!document.getElementById('staff-squad-grid')) {
@@ -740,7 +790,7 @@
                 // Base Select - Only update if needed to prevent flickers
                 const baseSel = document.getElementById('em-base-select');
                 if(baseSel && baseSel.innerHTML.trim() === '') {
-                    baseSel.innerHTML = '<option value="">-- SELECTIONNER --</option>' + OBJECTIVES.map(b => `<option value="${b}">${b}</option>`).join('');
+                    baseSel.innerHTML = '<option value="">-- SELECTIONNER --</option>' + OBJECTIVES.map(b => `<option value="${b}" ${state.opSettings.base===b?'selected':''}>${b}</option>`).join('');
                 }
                 if(baseSel) baseSel.value = state.opSettings.base || '';
                 
@@ -776,7 +826,7 @@
                         return `<div class="military-box ${border} p-3 flex flex-col gap-2 min-h-[160px]">
                             ${alert} ${cdsBadge}
                             <div class="corner-tl"></div><div class="corner-tr"></div><div class="corner-bl"></div><div class="corner-br"></div>
-                            <div class="flex justify-between items-start"><div class="flex items-center gap-2"><div class="w-2 h-2 rounded-sm ${dot}"></div><h3 class="text-lg font-black uppercase tracking-wider text-white">${s.name}</h3><span class="text-[10px] font-mono text-mil-cyan bg-[#1f2833] px-1">${s.freq}</span></div><input type="number" onchange="window.app.updateSquad('${s.id}', 'effectif', this.value)" class="w-10 bg-black border border-slate-700 text-center font-bold text-white focus:border-mil-cyan outline-none text-sm" value="${d.effectif||''}" placeholder="0"></div>
+                            <div class="flex justify-between items-start"><div class="flex items-center gap-2"><div class="w-2 h-2 rounded-sm ${dot}"></div><h3 class="text-lg font-black uppercase tracking-wider text-white">${s.name}</h3><span class="text-[10px] font-mono text-mil-cyan bg-[#1f2833] px-1">${s.freq}</span></div><input type="number" inputmode="numeric" pattern="[0-9]*" onchange="window.app.updateSquad('${s.id}', 'effectif', this.value)" class="w-10 bg-black border border-slate-700 text-center font-bold text-white focus:border-mil-cyan outline-none text-sm" value="${d.effectif||''}" placeholder="0"></div>
                             <div class="grid grid-cols-2 gap-2 mt-1">
                                 <div class="relative"><label class="text-[8px] uppercase text-slate-500 block mb-0.5">Chef d'Escouade</label><input list="sl-suggestions-list" type="text" onchange="window.app.updateSquad('${s.id}', 'sl', this.value)" class="w-full bg-[#1f2833] border ${d.sl?'border-white/40 text-white':'border-slate-700 text-slate-500'} text-xs py-1.5 px-2 uppercase outline-none focus:border-mil-cyan font-bold" placeholder="RECHERCHE..." value="${d.sl||''}"></div>
                                 <div class="relative"><label class="text-[8px] uppercase text-slate-500 block mb-0.5">Objectif</label><select onchange="window.app.updateSquad('${s.id}', 'objective', this.value)" class="w-full bg-[#1f2833] border border-slate-700 text-xs py-1.5 px-2 uppercase text-white outline-none focus:border-mil-cyan appearance-none"><option value="">-- NÉANT --</option>${OBJECTIVES.map(o => `<option value="${o}" ${d.objective===o?'selected':''}>${o}</option>`).join('')}</select></div>
@@ -813,18 +863,18 @@
                 if (state.activeSitrepForm === 'CONTACT') {
                     html = `
                         ${this.renderOptionGrid('type', ['INFANTERIE', 'VÉHICULE', 'BLINDÉ', 'HÉLICO'], d.type)}
-                        <div class="mt-4"><label class="text-[10px] text-slate-500 font-bold uppercase">NOMBRE</label><input type="number" id="sr-count" class="w-full bg-black border border-slate-600 p-4 text-white text-lg font-bold outline-none touch-input" placeholder="1"></div>
+                        <div class="mt-4"><label class="text-[10px] text-slate-500 font-bold uppercase">NOMBRE</label><input type="number" id="sr-count" inputmode="numeric" pattern="[0-9]*" class="w-full bg-black border border-slate-600 p-4 text-white text-lg font-bold outline-none touch-input" placeholder="1"></div>
                         <div class="mt-4">${this.renderOptionGrid('attitude', ['HOSTILE', 'NEUTRE', 'INCONNU'], d.attitude)}</div>
                         <div class="grid grid-cols-2 gap-4 mt-4">
-                            <div><label class="text-[10px] text-slate-500 font-bold uppercase">DIST (m)</label><input type="number" id="sr-dist" class="w-full bg-black border border-slate-600 p-4 text-white text-lg font-bold outline-none touch-input" placeholder="200"></div>
-                            <div><label class="text-[10px] text-slate-500 font-bold uppercase">AZIMUT</label><input type="text" id="sr-azi" class="w-full bg-black border border-slate-600 p-4 text-white text-lg font-bold outline-none touch-input" placeholder="360"></div>
+                            <div><label class="text-[10px] text-slate-500 font-bold uppercase">DIST (m)</label><input type="number" id="sr-dist" inputmode="numeric" pattern="[0-9]*" class="w-full bg-black border border-slate-600 p-4 text-white text-lg font-bold outline-none touch-input" placeholder="200"></div>
+                            <div><label class="text-[10px] text-slate-500 font-bold uppercase">AZIMUT</label><input type="text" id="sr-azi" inputmode="decimal" class="w-full bg-black border border-slate-600 p-4 text-white text-lg font-bold outline-none touch-input" placeholder="360"></div>
                         </div>
                     `;
                 } else if (state.activeSitrepForm === 'MEDICAL') {
                     html = `
                         <div class="grid grid-cols-2 gap-4">
-                            <div class="bg-red-900/20 p-2 border border-red-900/50"><label class="text-[10px] text-red-500 font-bold uppercase">ALPHA (GRAVE)</label><input id="sr-alpha" type="number" class="w-full bg-black border border-red-900/50 p-4 text-white text-xl font-bold touch-input" placeholder="0"></div>
-                            <div class="bg-yellow-900/20 p-2 border border-yellow-900/50"><label class="text-[10px] text-yellow-500 font-bold uppercase">BRAVO (LÉGER)</label><input id="sr-bravo" type="number" class="w-full bg-black border border-yellow-900/50 p-4 text-white text-xl font-bold touch-input" placeholder="0"></div>
+                            <div class="bg-red-900/20 p-2 border border-red-900/50"><label class="text-[10px] text-red-500 font-bold uppercase">ALPHA (GRAVE)</label><input id="sr-alpha" type="number" inputmode="numeric" pattern="[0-9]*" class="w-full bg-black border border-red-900/50 p-4 text-white text-xl font-bold touch-input" placeholder="0"></div>
+                            <div class="bg-yellow-900/20 p-2 border border-yellow-900/50"><label class="text-[10px] text-yellow-500 font-bold uppercase">BRAVO (LÉGER)</label><input id="sr-bravo" type="number" inputmode="numeric" pattern="[0-9]*" class="w-full bg-black border border-yellow-900/50 p-4 text-white text-xl font-bold touch-input" placeholder="0"></div>
                         </div>
                         <div class="mt-4">${this.renderOptionGrid('evasan', ['NON', 'OUI'], d.evasan ? 'OUI' : 'NON')}</div>
                         <div class="mt-4"><label class="text-[10px] text-slate-500 font-bold uppercase">LZ / POS</label><input type="text" id="sr-lz" class="w-full bg-black border border-slate-600 p-4 text-white text-lg outline-none touch-input" placeholder="Grille"></div>
@@ -928,7 +978,7 @@
                                 <div class="corner-tl"></div><div class="corner-tr"></div><div class="corner-bl"></div><div class="corner-br"></div>
                                 <div class="flex items-center justify-between gap-4">
                                     <div class="flex items-center gap-2 text-indigo-300 font-bold uppercase text-xs tracking-widest"><i data-lucide="wifi" class="w-4 h-4"></i> Fréquence Jonction</div>
-                                    <input type="text" placeholder="---.-" onchange="window.app.updateSquad('${squadId}', 'junctionFreq', this.value)" class="bg-black border border-indigo-500/50 text-white text-center font-mono font-bold text-lg w-24 p-1 outline-none focus:border-white touch-input" value="${squad.junctionFreq || ''}">
+                                    <input type="text" placeholder="---.-" inputmode="decimal" onchange="window.app.updateSquad('${squadId}', 'junctionFreq', this.value)" class="bg-black border border-indigo-500/50 text-white text-center font-mono font-bold text-lg w-24 p-1 outline-none focus:border-white touch-input" value="${squad.junctionFreq || ''}">
                                 </div>
                                 <p class="text-[9px] text-indigo-400/50 mt-2 text-center uppercase">Définissez la fréquence commune pour ce groupe.</p>
                             </div>
