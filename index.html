@@ -103,7 +103,7 @@
                     <span class="text-red-700">FOF</span>NET
                 </h1>
                 <div class="flex justify-center gap-4 text-[10px] uppercase tracking-[0.3em] text-slate-500">
-                    <span>Secure V.3.6.1</span><span>•</span><span>Ops Center</span><span>•</span><span class="text-emerald-500 animate-pulse">Online</span>
+                    <span>Secure V.3.6.2</span><span>•</span><span>Ops Center</span><span>•</span><span class="text-emerald-500 animate-pulse">Online</span>
                 </div>
             </div>
 
@@ -309,7 +309,7 @@
         const GRADES = ["Recrue", "Sdt", "1.Cl", "Cpl", "Cch", "Sgt", "Sgt-C", "Adj", "Adj-C", "Maj", "Aspi", "S-Lt", "Lt", "Cne"];
         const ROLES = ["Fusilier", "Médic", "AT", "MG", "Radio", "Sapeur", "Sniper", "Pilote", "Chef de Groupe"];
         
-        // Liste de suggestion SL (modifiable)
+        // Liste de suggestion SL
         const BASE_SL_SUGGESTIONS = ["Nico75", "-Sangui-", "[VDK]KEBABIERdu96", "ALEX2801CH", "ATOMIC W4RRIOR", "Benjamin", "Can am", "CCH.Le_S", "Darkspartan9337", "EagleClaw", "Fez", "Five Scream", "Flo.", "Gin", "Hybris95", "Jej", "KenBlook5129", "l Ryüjinn l", "Lapuchk6766", "LittleEvil", "lkurd26", "MASKER84", "Mirai", "MULTIFRUIT1492", "Natrium", "Nettoyeur", "oahhmz", "Panchito6097", "Pixc361", "Pokeur", "Poulet998", "Sucreblé", "Tatar", "Teckil", "TF3 SLAYER", "Théotime", "Tinky Winky", "Tong", "valoche_0", "ValouTekmi", "Waze toxic", "Exam94", "xYourGalactic-I", "Yogun", "Zl Deathstro", "zlatanqlf"];
 
         // --- FIREBASE INIT ---
@@ -337,10 +337,11 @@
             squads: {},
             opSettings: {},
             logs: [],
-            slTab: 'TACTIQUE', // TACTIQUE, ESCOUADE, RAPPORT, LIAISON
+            slTab: 'TACTIQUE',
             activeSitrepForm: null,
             sitrepData: {},
-            selectedSquadId: null // Pour le modal login
+            selectedSquadId: null,
+            activeReportId: null
         };
 
         // --- APP LOGIC ---
@@ -348,11 +349,10 @@
             init: function() {
                 this.bindEvents();
                 this.initAuth();
-                this.render(); // Initial render
+                this.render();
             },
 
             bindEvents: function() {
-                // Expose methods globally for HTML onclicks
                 window.app = this;
             },
 
@@ -361,16 +361,13 @@
                     state.user = u;
                     if (u) {
                         this.startListeners();
-                        // Auto-reconnect logic
                         if (state.pseudo && state.view === 'LANDING') {
-                            // On attend que les squads soient chargés par le listener
                             setTimeout(() => this.checkAutoLogin(), 1000); 
                         }
                     }
                     this.render();
                 });
 
-                // Sign In
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     try { await signInWithCustomToken(auth, __initial_auth_token); } 
                     catch (e) { await signInAnonymously(auth); }
@@ -380,20 +377,17 @@
             },
 
             startListeners: function() {
-                // Squads
                 onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'squads'), (snapshot) => {
                     const data = {};
                     snapshot.docs.forEach(doc => data[doc.id] = doc.data());
                     state.squads = data;
-                    this.checkAutoLogin(); // Check again on data update
+                    this.checkAutoLogin();
                     this.render();
                 });
-                // Settings path fixed
                 onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'config', 'ops'), (d) => {
                     state.opSettings = d.data() || {};
                     this.render();
                 });
-                // Logs
                 const qLogs = query(collection(db, 'artifacts', appId, 'public', 'data', 'mission_logs'), orderBy('timestamp', 'desc'));
                 onSnapshot(qLogs, (snapshot) => {
                     state.logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -403,7 +397,6 @@
 
             checkAutoLogin: function() {
                 if (state.view !== 'LANDING' || !state.pseudo) return;
-                // Si le joueur est un SL actif dans une escouade
                 const myActiveSquad = Object.entries(state.squads).find(([id, s]) => s.sl === state.pseudo && s.status === 'ACTIVE');
                 if (myActiveSquad) {
                     state.role = 'SL';
@@ -414,8 +407,57 @@
                 }
             },
 
-            // --- NAVIGATION & LOGIN ---
-            
+            // --- EM LOGIC ---
+            toggleCDS: async function(squadId, cdsIndex) {
+                const squad = state.squads[squadId] || {};
+                const currentCds = `CDS ${cdsIndex}`;
+                const newCds = (squad.cds_owner === currentCds) ? null : currentCds;
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), { cds_owner: newCds }, { merge: true });
+            },
+
+            // --- REPORT GENERATOR (Manquait dans la version précédente) ---
+            generateMilitaryReport: function(squad, userNote) {
+                let report = `RAPPORT DE MISSION / PATROUILLE\n`;
+                report += `=================================\n`;
+                report += `UNITÉ : ${squad.name} (${squad.sl})\n`;
+                report += `OBJECTIF : ${squad.objective || 'N/A'}\n`;
+                report += `DATE : ${new Date().toLocaleDateString()}\n\n`;
+                
+                report += `1. IDENTIFICATION / EFFECTIFS\n`;
+                report += `- Chef de Groupe : ${squad.sl}\n`;
+                report += `- Effectif total : ${squad.effectif}\n`;
+                if (squad.members && squad.members.length > 0) {
+                    report += `- Pax : ${squad.members.map(m => `${m.grade} ${m.name} (${m.role})`).join(', ')}\n`;
+                }
+                report += `\n`;
+
+                report += `2. CHRONOLOGIE DES ÉVÉNEMENTS\n`;
+                const history = squad.missionHistory || [];
+                if (history.length === 0) {
+                    report += `- R.A.S (Aucun événement noté)\n`;
+                } else {
+                    history.forEach(h => {
+                        const time = new Date(h.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                        let content = h.content;
+                        
+                        if (content.startsWith('CONTACT:')) content = content.replace('CONTACT:', 'CONTACT ENNEMI -');
+                        else if (content.startsWith('SANITAIRE:')) content = content.replace('SANITAIRE:', 'BILAN SANITAIRE -');
+                        else if (content.startsWith('LOG:')) content = content.replace('LOG:', 'DEMANDE LOGISTIQUE -');
+                        else if (content === 'DÉPART MISSION') content = 'DÉPART MISSION - SORTIE DE BASE';
+                        else if (content === 'RETOUR BASE') content = 'RETOUR BASE - FIN DE MOUVEMENT';
+
+                        report += `[${time}] ${content}\n`;
+                    });
+                }
+                report += `\n`;
+
+                report += `3. SYNTHÈSE / CONCLUSION\n`;
+                report += `${userNote || "Aucune note particulière ajoutée."}\n`;
+                report += `=================================\n`;
+                return report;
+            },
+
+            // --- ACTIONS ---
             openLoginModal: function(type) {
                 const modal = document.getElementById('login-modal');
                 const content = document.getElementById('modal-content');
@@ -523,6 +565,7 @@
             },
 
             updateSquad: async function(squadId, field, val) {
+                // SAFE CHECK: Check if squad data exists before accessing properties
                 const currentSquad = state.squads[squadId] || {};
                 const updates = { [field]: val };
                 // Logic reset
@@ -651,9 +694,20 @@
                 const squadId = Object.keys(state.squads).find(k => state.squads[k].sl === state.pseudo);
                 if (id === 'rtb') {
                     if(confirm("Demander RTB à l'EM ?")) this.requestRTB(squadId);
+                } else if (id === 'depart') {
+                    this.submitSitrepDirect(squadId, 'DÉPART MISSION');
+                } else if (id === 'retour') {
+                    this.submitSitrepDirect(squadId, 'RETOUR BASE');
                 } else {
                     this.openSitrepModal(form, label);
                 }
+            },
+            
+            submitSitrepDirect: async function(squadId, msg) {
+                const ts = new Date().toISOString();
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), {
+                    sitrep: msg, lastSitrepTime: ts, missionHistory: arrayUnion({ type: 'SITREP', content: msg, time: ts })
+                });
             },
 
             sendEndMission: function() {
@@ -661,14 +715,6 @@
                 const note = document.getElementById('final-report-input').value;
                 const status = document.querySelector('input[name="mission-status"]:checked').value;
                 if(confirm("Clôturer la mission ?")) this.endMission(squadId, note, status);
-            },
-
-            // --- EM LOGIC ---
-            toggleCDS: async function(squadId, cdsIndex) {
-                const squad = state.squads[squadId] || {};
-                const currentCds = `CDS ${cdsIndex}`;
-                const newCds = (squad.cds_owner === currentCds) ? null : currentCds;
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), { cds_owner: newCds }, { merge: true });
             },
 
             // --- REPORT MODAL ACTIONS (STAFF) ---
