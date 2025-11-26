@@ -103,7 +103,7 @@
                     <span class="text-red-700">FOF</span>NET
                 </h1>
                 <div class="flex justify-center gap-4 text-[10px] uppercase tracking-[0.3em] text-slate-500">
-                    <span>Secure V.3.6.2</span><span>•</span><span>Ops Center</span><span>•</span><span class="text-emerald-500 animate-pulse">Online</span>
+                    <span>Secure V.3.6.3</span><span>•</span><span>Ops Center</span><span>•</span><span class="text-emerald-500 animate-pulse">Online</span>
                 </div>
             </div>
 
@@ -414,6 +414,11 @@
                 const newCds = (squad.cds_owner === currentCds) ? null : currentCds;
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), { cds_owner: newCds }, { merge: true });
             },
+            
+            addCDS: async function() {
+                const count = (state.opSettings.active_cds_count || 0) + 1;
+                await this.updateSettings('active_cds_count', count);
+            },
 
             // --- REPORT GENERATOR ---
             generateMilitaryReport: function(squad, userNote) {
@@ -585,17 +590,23 @@
 
             endMission: async function(squadId, report = "R.A.S", outcome = "UNKNOWN") {
                 const sData = state.squads[squadId] || {};
-                // Log
+                
+                // Generation du rapport final propre avec le générateur (pas de undefined ici)
+                const reportFull = (typeof report === 'string' && report.length > 0) ? report : this.generateMilitaryReport(sData, "");
+
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'mission_logs'), {
-                    sl: sData.sl, squad: sData.name, objective: sData.objective,
-                    startTime: sData.startTime, endTime: new Date().toISOString(),
-                    report: report, timestamp: serverTimestamp(), managedBy: state.pseudo,
+                    sl: sData.sl, squad: sData.name, objective: sData.objective || 'N/A', // Fallback si undefined
+                    startTime: sData.startTime || new Date().toISOString(), 
+                    endTime: new Date().toISOString(),
+                    report: reportFull, 
+                    timestamp: serverTimestamp(), 
+                    managedBy: state.pseudo,
                     outcome: outcome // Success/Failure
                 });
                 // Reset
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), {
                     sl: '', objective: '', status: 'DISPO', startTime: null, sitrep: '',
-                    members: [], missionHistory: [], rtbStatus: 'NONE', junctionFreq: ''
+                    members: [], missionHistory: [], rtbStatus: 'NONE', junctionFreq: '', cds_owner: null
                 });
                 
                 if (state.role === 'SL') this.logout();
