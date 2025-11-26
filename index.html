@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD NET // C2 SYSTEM V4.1</title>
+    <title>SQUAD NET // C2 SYSTEM V5</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -61,7 +61,7 @@
             console.log("SQUAD NET: LIAISON ÉTABLIE.");
         } catch (e) { console.error("ERREUR LIAISON", e); }
 
-        const appId = 'squadnet-ops-v4';
+        const appId = 'squadnet-ops-v5';
 
         // --- CONSTANTES ---
         const SQUADS = ["ALPHA", "BRAVO", "CHARLIE", "DELTA", "ECHO", "FOXTROT", "GOLF", "HOTEL", "INDIA", "JULIETT", "KILO", "LIMA", "MIKE"];
@@ -74,16 +74,13 @@
         const WEATHER = ["Clair", "Nuageux", "Pluie", "Brouillard", "Tempête"];
         const VISIBILITY = ["Excellente", "Bonne", "Réduite", "Nulle (Nuit noire)"];
         const TOPO_LINES = ["Ligne de Départ (LD)", "Ligne de Coordination", "Point de Contrôle (CP)", "Limite Avant (LOA)"];
-        
-        // EVASAN & APPUI
-        const EVASAN_PRIO = ["ALPHA - URGENT (VITAL)", "BRAVO - PRIORITAIRE", "CHARLIE - ROUTINE"];
+        const EVASAN_PRIO = ["VITAL (Vie en danger)", "PRIORITAIRE (Urgent)", "ROUTINE (Standard)"];
         const EVASAN_MOYEN = ["Hélicoptère", "Véhicule Terrestre", "À pied"];
         const FIRE_VECTEUR = ["Mortier 81mm", "Mortier 120mm", "Artillerie 155mm", "CAS (Aérien)", "Hélico Attaque"];
         const FIRE_CIBLE = ["Infanterie à découvert", "Infanterie retranchée", "Véhicule léger", "Blindé", "Bâtiment"];
         const FIRE_EFFET = ["Neutralisation", "Destruction", "Fumigène / Masquage", "Éclairant"];
         const LOG_TYPE = ["Munitions", "Médical", "Carburant", "Vivres/Eau", "Matériel divers"];
         const LOG_URGENCE = ["Immédiat (Critique)", "Dans l'heure", "Fin de mission"];
-
         const MVT_TYPES = ["Début progression", "Halte de sécurité", "Arrivée sur Obj", "Repli défensif", "Rupture de contact"];
         const HEALTH_STATES = ["Blessé Léger", "Blessé Grave", "Inconscient", "DCD"];
         const RANKS = ["Recrue", "Soldat", "1cl", "Cpl", "Cch", "Cch1", "Sgt", "Sch", "Sch BM2", "Maj", "Slt", "Ltn", "Cne"];
@@ -120,7 +117,7 @@
                 Check: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>,
                 Lock: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
                 LogOut: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
-                Globe: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"/></svg>,
+                Globe: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10 15.3 15.3 0 0 1 4-10z"/></svg>,
                 Upload: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
                 Download: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
                 Mountain: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m8 3 4 8 5-5 5 15H2L8 3z"/></svg>,
@@ -129,7 +126,8 @@
                 Cross: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 2a2 2 0 0 0-2 2v5H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h5v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-5h5a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-5V4a2 2 0 0 0-2-2h-6z"/></svg>,
                 Zap: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
                 Box: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>,
-                Siren: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 12a5 5 0 0 1 5-5v0a5 5 0 0 1 5 5v6H7v-6Z"/><path d="M5 20h14"/><path d="M14 9V5"/><path d="M10 9V5"/><path d="M12 3v2"/></svg>
+                Siren: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 12a5 5 0 0 1 5-5v0a5 5 0 0 1 5 5v6H7v-6Z"/><path d="M5 20h14"/><path d="M14 9V5"/><path d="M10 9V5"/><path d="M12 3v2"/></svg>,
+                Edit: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
             };
             return <span className={className}>{icons[name] || null}</span>;
         };
@@ -192,6 +190,51 @@
             );
         };
 
+        // --- MODALS DE COMMANDEMENT (HQ -> SQUAD) ---
+        const AssignMissionModal = ({ onClose, onAssign }) => {
+            const [title, setTitle] = useState("");
+            const [desc, setDesc] = useState("");
+            
+            return (
+                <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 font-mono">
+                    <div className="bg-slate-950 border-2 border-blue-600 w-full max-w-sm p-4 relative z-10">
+                        <h4 className="text-blue-500 font-mono text-center mb-4 border-b border-blue-900 pb-2 tracking-widest">TRANSMETTRE ORDRE (FRAGO)</h4>
+                        <div className="space-y-4">
+                            <InputField label="OBJET" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: NOUVEL OBJECTIF" />
+                            <textarea className="w-full h-32 bg-black border border-blue-800 text-blue-400 p-3 font-mono text-sm focus:border-blue-500 focus:outline-none resize-none mb-4" 
+                                placeholder="Détails de la mission..." value={desc} onChange={(e) => setDesc(e.target.value)} />
+                            <div className="flex gap-2">
+                                <TacticalButton variant="danger" className="flex-1" onClick={onClose}>ANNULER</TacticalButton>
+                                <TacticalButton variant="hq" className="flex-1" onClick={() => onAssign(title, desc)}>TRANSMETTRE</TacticalButton>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- MODAL DE RECEPTION D'ORDRE (SQUAD <- HQ) ---
+        const IncomingMissionModal = ({ mission, onAccept, onRefuse }) => {
+            return (
+                <div className="fixed inset-0 z-[300] bg-blue-950/90 backdrop-blur-md flex items-center justify-center p-4 font-mono animate-pulse">
+                    <div className="bg-black border-4 border-blue-500 w-full max-w-md p-6 relative z-10 text-center shadow-[0_0_100px_rgba(59,130,246,0.8)]">
+                        <div className="text-blue-500 mb-4 animate-bounce"><Icon name="Radio" size={64} className="mx-auto"/></div>
+                        <h2 className="text-3xl font-black text-blue-500 mb-2 tracking-[0.2em]">MESSAGE PRIORITAIRE</h2>
+                        <div className="bg-blue-900/20 border border-blue-800 p-4 mb-6 text-left">
+                            <div className="text-xs text-blue-400 uppercase tracking-widest mb-1">OBJET</div>
+                            <div className="text-xl font-bold text-white mb-4">{mission.title}</div>
+                            <div className="text-xs text-blue-400 uppercase tracking-widest mb-1">CONTENU</div>
+                            <div className="text-lg font-bold text-white whitespace-pre-wrap">{mission.desc}</div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <button onClick={onRefuse} className="w-full py-4 bg-black text-red-600 font-black text-sm hover:bg-red-900/30 tracking-widest border-2 border-red-600 transition-all">REFUSER</button>
+                            <button onClick={() => onAccept(mission)} className="w-full py-4 bg-blue-600 text-black font-black text-sm hover:bg-white hover:text-blue-600 tracking-widest border-2 border-blue-600 transition-all">ACCEPTER MISSION</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         // --- COMPONENTS APPLICATIFS ---
 
         // HQ ALERT MODAL (AVEC VALIDATION)
@@ -217,17 +260,20 @@
         };
 
         // MODAL SITREP & ENV
-        const SitrepModal = ({ onClose, type, onConfirm, roster }) => {
+        const SitrepModal = ({ onClose, type, onConfirm, roster, validSquads }) => {
             const [step, setStep] = useState(0);
             const [data, setData] = useState({});
             const [customText, setCustomText] = useState("");
             const handleSelection = (key, value) => { setData(prev => ({ ...prev, [key]: value })); setStep(prev => prev + 1); };
 
+            // Use filtered squads if provided (for Section Leader), else all squads
+            const squadList = validSquads && validSquads.length > 0 ? validSquads.map(s => s.id) : SQUADS;
+
             if (type === 'DIVERS') return (<div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 font-mono"><div className="bg-slate-950 border-2 border-emerald-600 w-full max-w-sm p-4 relative z-10"><h4 className="text-emerald-500 font-mono text-center mb-2 border-b border-emerald-900 pb-2 tracking-widest">OBSERVATION</h4><textarea className="w-full h-32 bg-black border border-emerald-800 text-emerald-400 p-3 font-mono text-sm focus:border-emerald-500 focus:outline-none resize-none mb-4" placeholder="EX: RENS, SUSPECTS..." value={customText} onChange={(e) => setCustomText(e.target.value)} autoFocus /><TacticalButton variant="primary" className="w-full" onClick={() => onConfirm({ details: customText || "RAS" })}><Icon name="Check" size={18} /> VALIDER</TacticalButton><button onClick={onClose} className="absolute top-2 right-2 text-emerald-800"><Icon name="X" size={24}/></button></div></div>);
 
             const renderContent = () => {
                 if (type === 'EVASAN_REQ') {
-                    if(step===0) return (<><h4 className="text-amber-500 font-mono text-center mb-4 border-b border-amber-900 pb-2">UNITÉ CONCERNÉE</h4><div className="grid grid-cols-1 gap-2">{SQUADS.map(s => <TacticalButton key={s} variant="modal" onClick={() => handleSelection('squad', s)}>{s}</TacticalButton>)}</div></>);
+                    if(step===0) return (<><h4 className="text-amber-500 font-mono text-center mb-4 border-b border-amber-900 pb-2">UNITÉ CONCERNÉE</h4><div className="grid grid-cols-2 gap-2">{squadList.map(s => <TacticalButton key={s} variant="modal" onClick={() => handleSelection('squad', s)}>{s}</TacticalButton>)}</div></>);
                     if(step===1) return (<><h4 className="text-amber-500 font-mono text-center mb-4 border-b border-amber-900 pb-2">PRIORITÉ</h4><div className="grid grid-cols-1 gap-2">{EVASAN_PRIO.map(p => <TacticalButton key={p} variant="modal" onClick={() => handleSelection('urgence', p)}>{p}</TacticalButton>)}</div></>);
                     if(step===2) return (<><h4 className="text-amber-500 font-mono text-center mb-4 border-b border-amber-900 pb-2">MOYEN DE TRANSPORT</h4><div className="grid grid-cols-1 gap-2">{EVASAN_MOYEN.map(m => <TacticalButton key={m} variant="modal" onClick={() => handleSelection('moyen', m)}>{m}</TacticalButton>)}</div></>);
                     if(step===3) return (<><h4 className="text-amber-500 font-mono text-center mb-4 border-b border-amber-900 pb-2">NOMBRE DE BLESSÉS</h4><div className="grid grid-cols-2 gap-2">{[1,2,3,4,5].map(n => <TacticalButton key={n} variant="modal" onClick={() => onConfirm({...data, nbPax: n})}>{n} PAX</TacticalButton>)}</div></>);
@@ -297,6 +343,7 @@
             const [requests, setRequests] = useState([]);
             const [history, setHistory] = useState([]);
             const [alertData, setAlertData] = useState(null);
+            const [assignModalSquad, setAssignModalSquad] = useState(null);
 
             useEffect(() => {
                 if (!db) return;
@@ -340,11 +387,23 @@
                 }
             };
 
+            const handleAssignMission = async (title, desc) => {
+                if(db && assignModalSquad) {
+                     try {
+                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'active_squads', assignModalSquad.id), {
+                            pendingMission: { title, desc, timestamp: Date.now(), sender: "QG" }
+                        });
+                        setAssignModalSquad(null);
+                     } catch(e) {}
+                }
+            };
+
             return (
                 <div className="min-h-screen bg-black text-blue-500 font-mono p-4">
                     <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e3a8a_1px,transparent_1px),linear-gradient(to_bottom,#1e3a8a_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-20 pointer-events-none z-0"></div>
                     
                     {alertData && <AlertModal alert={alertData} onResponse={handleAlertResponse} />}
+                    {assignModalSquad && <AssignMissionModal onClose={() => setAssignModalSquad(null)} onAssign={handleAssignMission} />}
                     
                     <header className="relative z-10 flex justify-between items-center border-b-2 border-blue-900 p-2 sm:pb-4 sm:mb-6 bg-black/80 backdrop-blur gap-2">
                         <div className="flex items-center gap-2 sm:gap-3 overflow-hidden"><div className="p-1 sm:p-2 border border-blue-800 bg-blue-950/30 shrink-0"><Icon name="Globe" className="text-blue-400" size={24}/></div><div className="min-w-0"><h1 className="text-sm sm:text-2xl font-black uppercase tracking-[0.15em] text-blue-400 text-glow truncate">ÉTAT-MAJOR</h1><div className="text-[8px] sm:text-xs text-blue-700 font-mono uppercase tracking-widest truncate">CENTRE OPÉRATIONNEL</div></div></div>
@@ -374,8 +433,11 @@
                                                 <div className="text-[10px] text-amber-600 border-t border-blue-900/30 pt-1">SOUS ORDRES: {squad.subordinates.join(', ')}</div>
                                             )}
                                             <div className="mt-2 bg-blue-950/20 border border-blue-900/50 p-2 min-h-[60px]"><div className="text-[9px] text-blue-600 uppercase mb-1 flex justify-between"><span>DERNIER SITREP</span><span>{squad.lastLog?.time || "--:--"}</span></div><div className={`text-xs font-mono ${squad.lastLog?.type === 'CONTACT' || squad.lastLog?.type === 'FEU' ? 'text-amber-400' : squad.lastLog?.type === 'SANTE' ? 'text-red-400' : 'text-blue-300'}`}>{squad.lastLog ? `[${squad.lastLog.type}] ${squad.lastLog.message}` : "SILENCE RADIO"}</div></div>
-                                            {hasReport && (<div className="mt-2"><TacticalButton variant="hq" className="w-full" onClick={() => downloadTxtFile(`RETEX_${squad.id}.txt`, squad.finalReport)}><Icon name="Download" size={16} /> TÉLÉCHARGER RETEX</TacticalButton></div>)}
-                                            <TacticalButton variant="danger" className="w-full mt-2 py-2 text-[10px]" onClick={() => dissolveSquad(squad.id)}><Icon name="Trash2" size={14}/> DISSOUDRE UNITÉ</TacticalButton>
+                                            <div className="flex gap-2 mt-auto">
+                                                 <TacticalButton variant="hq" className="flex-1 text-[10px] py-2" onClick={() => setAssignModalSquad(squad)}><Icon name="Edit" size={14}/> ORDRES</TacticalButton>
+                                                 {hasReport && (<div className="flex-1"><TacticalButton variant="hq" className="w-full text-[10px] py-2" onClick={() => downloadTxtFile(`RETEX_${squad.id}.txt`, squad.finalReport)}><Icon name="Download" size={14} /></TacticalButton></div>)}
+                                            </div>
+                                            <TacticalButton variant="danger" className="w-full mt-1 py-2 text-[10px]" onClick={() => dissolveSquad(squad.id)}><Icon name="Trash2" size={14}/> DISSOUDRE</TacticalButton>
                                         </div>
                                     </TacticalCard>
                                 );
@@ -392,6 +454,8 @@
             const [allSquads, setAllSquads] = useState([]);
             const [mySquads, setMySquads] = useState([]);
             const [modalOpen, setModalOpen] = useState(false);
+            const [assignModalSquad, setAssignModalSquad] = useState(null); // To assign mission
+            const [incomingMission, setIncomingMission] = useState(null);
             const [currentActionType, setCurrentActionType] = useState(null);
             const [logs, setLogs] = useState([]);
 
@@ -406,8 +470,18 @@
                         setMySquads(sq.filter(s => squadData.subordinates.includes(s.id)));
                     }
                 });
-                return () => subSquads();
-            }, [squadData.subordinates]);
+                
+                // Special listener for my own squad data to catch pendingMission
+                const myDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'active_squads', squadData.name);
+                const subMyDoc = onSnapshot(myDocRef, (docSnap) => {
+                     if(docSnap.exists()) {
+                         const d = docSnap.data();
+                         if(d.pendingMission) setIncomingMission(d.pendingMission);
+                     }
+                });
+                
+                return () => { subSquads(); subMyDoc(); };
+            }, [squadData.subordinates, squadData.name]);
 
             const sendSectionReport = async () => {
                  try {
@@ -447,10 +521,41 @@
                 }
             };
 
+            const handleAssignMission = async (title, desc) => {
+                if(db && assignModalSquad) {
+                     try {
+                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'active_squads', assignModalSquad.id), {
+                            pendingMission: { title, desc, timestamp: Date.now(), sender: `SECTION ${squadData.name}` }
+                        });
+                        setAssignModalSquad(null);
+                     } catch(e) {}
+                }
+            };
+            
+            const handleAcceptMission = async (mission) => {
+                 // On accepte la mission du QG, ça peut update notre "missionData" local si on veut, ou juste logger
+                 if(db) {
+                     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'active_squads', squadData.name), {
+                         pendingMission: null, // Clear pending
+                         'mission.objective': mission.title // Update current mission
+                     });
+                     setIncomingMission(null);
+                 }
+            };
+             const handleRefuseMission = async () => {
+                 if(db) {
+                     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'active_squads', squadData.name), { pendingMission: null });
+                     setIncomingMission(null);
+                 }
+            };
+
+
             return (
                 <div className="min-h-screen bg-black text-amber-500 font-mono p-4">
                     <div className="absolute inset-0 bg-[linear-gradient(to_right,#78350f_1px,transparent_1px),linear-gradient(to_bottom,#78350f_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-20 pointer-events-none z-0"></div>
-                    {modalOpen && <SitrepModal onClose={() => setModalOpen(false)} type={currentActionType} onConfirm={(d) => { addSmartLog(currentActionType, d); setModalOpen(false); }} roster={[]} />}
+                    {modalOpen && <SitrepModal onClose={() => setModalOpen(false)} type={currentActionType} onConfirm={(d) => { addSmartLog(currentActionType, d); setModalOpen(false); }} roster={[]} validSquads={mySquads} />}
+                    {assignModalSquad && <AssignMissionModal onClose={() => setAssignModalSquad(null)} onAssign={handleAssignMission} />}
+                    {incomingMission && <IncomingMissionModal mission={incomingMission} onAccept={handleAcceptMission} onRefuse={handleRefuseMission} />}
                     
                      <header className="relative z-10 flex justify-between items-center border-b-2 border-amber-900 p-2 sm:pb-4 sm:mb-6 bg-black/80 backdrop-blur gap-2">
                         <div className="flex items-center gap-2 sm:gap-3 overflow-hidden"><div className="p-1 sm:p-2 border border-amber-800 bg-amber-950/30 shrink-0"><Icon name="Target" className="text-amber-500" size={24}/></div><div className="min-w-0"><h1 className="text-sm sm:text-2xl font-black uppercase tracking-[0.15em] text-amber-500 text-glow truncate">SECTION {squadData.name}</h1><div className="text-[8px] sm:text-xs text-amber-700 font-mono uppercase tracking-widest truncate">PC TACTIQUE</div></div></div>
@@ -473,6 +578,7 @@
                                      <div className="flex flex-col h-full gap-3">
                                         <div className="flex justify-between items-start border-b border-amber-900/30 pb-2"><div><div className="text-xs text-amber-700 uppercase tracking-widest">CDG</div><div className="text-amber-300 font-bold">{squad.leaderRank} {squad.leaderName}</div></div></div>
                                         <div className="mt-2 bg-amber-950/20 border border-amber-900/50 p-2 min-h-[60px]"><div className="text-[9px] text-amber-600 uppercase mb-1 flex justify-between"><span>DERNIER SITREP</span><span>{squad.lastLog?.time || "--:--"}</span></div><div className="text-xs font-mono text-amber-300">{squad.lastLog ? `[${squad.lastLog.type}] ${squad.lastLog.message}` : "SILENCE RADIO"}</div></div>
+                                        <TacticalButton variant="section_action" className="mt-2 py-2 text-[10px]" onClick={() => setAssignModalSquad(squad)}><Icon name="Edit" size={14}/> DONNER ORDRES</TacticalButton>
                                      </div>
                                 </TacticalCard>
                              );
@@ -651,7 +757,7 @@
                         )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">{SQUADS.map(squad => { const isTaken = takenSquads[squad] && takenSquads[squad] !== user?.uid; const isMine = takenSquads[squad] === user?.uid; return (<button key={squad} onClick={() => { if(!isTaken) setJoiningSquad(squad); }} disabled={isTaken} className={`relative p-4 border-2 font-mono font-bold text-lg transition-all group overflow-hidden ${isTaken ? 'border-red-900/30 bg-red-950/10 text-red-900 cursor-not-allowed opacity-50' : isMine ? 'border-emerald-400 bg-emerald-900/20 text-emerald-400' : 'border-emerald-900 bg-black text-emerald-700 hover:border-emerald-500 hover:text-emerald-400'}`}><div className={`absolute top-0 left-0 w-1 h-1 ${isTaken ? 'bg-red-900' : 'bg-emerald-500'}`}></div><div className={`absolute bottom-0 right-0 w-1 h-1 ${isTaken ? 'bg-red-900' : 'bg-emerald-500'}`}></div><div className="flex items-center justify-between relative z-10"><span className="tracking-widest">{squad}</span>{isTaken && <Icon name="Lock" size={14}/>}{isMine && <Icon name="Check" size={14}/>}</div></button>); })}</div></div>
+                    <div className="grid grid-cols-2 gap-4">{SQUADS.map(squad => { const isTaken = takenSquads[squad] && takenSquads[squad] !== user?.uid; const isMine = takenSquads[squad] === user?.uid; return (<button key={squad} onClick={() => { if(!isTaken) setJoiningSquad(squad); }} disabled={isTaken} className={`relative p-4 border-2 font-mono font-bold text-lg transition-all group overflow-hidden ${isTaken ? 'border-red-900/30 bg-red-950/10 text-red-900 cursor-not-allowed opacity-50' : isMine ? 'border-emerald-400 bg-emerald-900/20 text-emerald-400' : 'border-emerald-900 bg-black text-emerald-700 hover:border-emerald-500 hover:text-emerald-400'}`}><div className={`absolute top-0 left-0 w-1 h-1 ${isTaken ? 'bg-red-900' : 'bg-emerald-500'}`}></div><div className={`absolute bottom-0 right-0 w-1 h-1 ${isTaken ? 'bg-red-900' : 'bg-emerald-500'}`}></div><div className="flex items-center justify-between relative z-10"><span className="tracking-widest">{squad}</span>{isTaken && <span className="text-xs text-emerald-500 truncate ml-1"> {takenSquads[squad] === user?.uid ? "" : "PRIS"}</span>} {isMine && <Icon name="Check" size={14}/>}</div></button>); })}</div></div>
                 </div>
             );
         };
@@ -668,19 +774,26 @@
             const [modalOpen, setModalOpen] = useState(false);
             const [manageModalOpen, setManageModalOpen] = useState(false);
             const [currentActionType, setCurrentActionType] = useState(null);
+            const [incomingMission, setIncomingMission] = useState(null);
             
             const [newSoldier, setNewSoldier] = useState({ name: "", rank: "Soldat", role: "GV" });
             const [objectives, setObjectives] = useStickyState([], `${squadPrefix}_objs`);
             const [newObjText, setNewObjText] = useState("");
             const [debrief, setDebrief] = useStickyState({ morale: "Moyen", plus: "", minus: "", nominations: "" }, `${squadPrefix}_debrief`);
 
-            // --- ECOUTEUR DE SURVIE (ANTI-DISSOLUTION) ---
+            // --- ECOUTEUR DE SURVIE (ANTI-DISSOLUTION) & MISSION UPDATE ---
             useEffect(() => {
                 if(!db || !squadData.name) return;
                 const unsub = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'active_squads', squadData.name), (docSnap) => {
                     if (!docSnap.exists()) {
                         alert("UNITÉ DISSOUTE PAR LE QG.");
                         onLogout();
+                    } else {
+                        // Listen for incoming mission orders
+                        const d = docSnap.data();
+                        if (d.pendingMission) {
+                            setIncomingMission(d.pendingMission);
+                        }
                     }
                 });
                 return () => unsub();
@@ -710,21 +823,58 @@
                 else if (type === 'MVT') m = `MVT: ${data.typeMvt}`;
                 else if (type === 'ENV') m = `${data.category}: ${data.detail}`;
                 else if (type === 'DIVERS') m = `RENS: ${data.details}`;
+                // Messages formatés pour EVASAN/FEU/LOG
+                else if (type === 'EVASAN_REQ') m = `DEMANDE EVASAN: Prio ${data.urgence}, Moyen ${data.moyen}, ${data.nbPax} Pax.`;
+                else if (type === 'FIRE_REQ') m = `DEMANDE FEU: ${data.vecteur} sur ${data.cible}. Effet: ${data.effet}.`;
+                else if (type === 'LOG_REQ') m = `DEMANDE LOG: ${data.type}, Urgence: ${data.urgence}.`;
                 else m = data.details || "";
                 
-                setLogs(prev => [{ id: Date.now(), time: t, missionTime: formatTime(missionTime), type, raw: data, message: m }, ...prev]); 
+                const logType = ['EVASAN_REQ', 'FIRE_REQ', 'LOG_REQ'].includes(type) ? type.replace('_REQ', '') : type;
+
+                setLogs(prev => [{ id: Date.now(), time: t, missionTime: formatTime(missionTime), type: logType, raw: data, message: m }, ...prev]); 
+                
+                // Update DB for HQ
+                if(db) {
+                    updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'active_squads', squadData.name), {
+                        lastLog: { type: logType, message: m, time: t },
+                        lastUpdate: Date.now()
+                    });
+                     // TRIGGER HQ ALERT FOR CRITICAL REQUESTS
+                    if(['EVASAN_REQ', 'FIRE_REQ', 'LOG_REQ'].includes(type)) {
+                        addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'hq_alerts'), {
+                            type: logType, sender: squadData.name, message: m, timestamp: Date.now(), status: 'pending'
+                        });
+                    }
+                }
+
                 if (type === 'SANTE' && data.soldatData?.id) { 
                     let st = 'BLESSÉ'; if(data.etat === 'DCD') st = 'DCD'; else if(data.etat === 'Inconscient') st = 'INCONSCIENT'; 
                     setRoster(prev => prev.map(s => s.id === data.soldatData.id ? { ...s, status: st } : s)); 
                 } 
             };
             
-            const handleActionClick = (type) => { if (!missionActive && type !== 'DIVERS') { alert("MISSION NON DÉBUTÉE"); return; } if (['CONTACT', 'FEU', 'SANTE', 'MVT', 'DIVERS', 'ENV'].includes(type)) { setCurrentActionType(type); setModalOpen(true); } else { if (type === 'RAS') addSmartLog(type, { details: "R.A.S." }); if (type === 'APPUI') addSmartLog(type, { details: "Poste d'observation." }); if (type === 'TRANS') addSmartLog(type, { details: "Check radio." }); } };
+            const handleActionClick = (type) => { if (!missionActive && type !== 'DIVERS') { alert("MISSION NON DÉBUTÉE"); return; } if (['CONTACT', 'FEU', 'SANTE', 'MVT', 'DIVERS', 'ENV', 'EVASAN_REQ', 'FIRE_REQ', 'LOG_REQ'].includes(type)) { setCurrentActionType(type); setModalOpen(true); } else { if (type === 'RAS') addSmartLog(type, { details: "R.A.S." }); if (type === 'APPUI') addSmartLog(type, { details: "Poste d'observation." }); if (type === 'TRANS') addSmartLog(type, { details: "Check radio." }); } };
             
             // OBJECTIVES
             const addObjective = () => { if(newObjText.trim()){ setObjectives([...objectives, { id: Date.now(), text: newObjText, done: false }]); setNewObjText(""); } };
             const toggleObjective = (id) => { setObjectives(objectives.map(o => o.id === id ? { ...o, done: !o.done } : o)); };
             const deleteObjective = (id) => { setObjectives(objectives.filter(o => o.id !== id)); };
+            
+            const handleAcceptMission = async (mission) => {
+                 setMissionData({...missionData, objective: mission.title });
+                 setObjectives([...objectives, { id: Date.now(), text: mission.desc, done: false }]);
+                 if(db) {
+                     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'active_squads', squadData.name), { pendingMission: null });
+                     setIncomingMission(null);
+                     addSmartLog('DIVERS', { details: `ORDRES REÇUS DE ${mission.sender}: ${mission.title}` });
+                 }
+            };
+             const handleRefuseMission = async () => {
+                 if(db) {
+                     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'active_squads', squadData.name), { pendingMission: null });
+                     setIncomingMission(null);
+                 }
+            };
 
             const generateNarrativeAAR = () => { 
                 const today = new Date().toLocaleDateString('fr-FR'); const currentLeader = roster.find(s => s.role.includes("CDG")); 
@@ -733,7 +883,7 @@
                 const fmtMen = (m) => m ? (m==="Infanterie"?"d'infanterie":m==="Sniper"?"de tireurs d'élite":`de type ${m.toLowerCase()}`) : "hostile"; 
                 const fmtDist = (d) => d ? (d.includes("<50m")?"au contact immédiat":d.includes("100m")?"à courte distance":d.includes("300m")?"à moyenne distance":"à longue distance") : ""; 
                 
-                if (logs.length === 0) txt += "Aucun événement notable.\n"; else logs.slice().reverse().forEach(l => { let s = ""; const d = l.raw; const t = l.missionTime; if(l.type === 'CONTACT') s = `À ${t}, visuel confirmé sur ${fmtVol(d.volume)} ${fmtMen(d.menace)} (${d.activity.toLowerCase()}). Equipement identifié : ${d.equipment.toLowerCase()}. Localisation : ${d.direction}, ${fmtDist(d.distance)}.`; else if(l.type === 'FEU') s = `À ${t}, engagement de ${de(fmtVol(d.volume))} ${fmtMen(d.menace)} au ${d.direction}.`; else if(l.type === 'SANTE') { let etatTxt = d.etat; if (d.etat === "Blessé Léger") etatTxt = "a été blessé légèrement"; if (d.etat === "Blessé Grave") etatTxt = "a été blessé gravement"; if (d.etat === "Inconscient") etatTxt = "est inconscient"; if (d.etat === "DCD") etatTxt = "est décédé"; s = `À ${t}, alerte sanitaire : le ${d.soldatData.name} ${etatTxt}.`; } else if(l.type === 'MVT') s = `À ${t}, mouvement tactique : ${d.typeMvt.toLowerCase()}.`; else if(l.type === 'ENV') s = `À ${t}, relevé environnemental : ${d.category} - ${d.detail}.`; else if(l.type === 'DIVERS') s = `À ${t}, renseignement divers : "${d.details}".`; else s = `À ${t} : ${d.details||l.message}.`; txt += `${s}\n`; }); 
+                if (logs.length === 0) txt += "Aucun événement notable.\n"; else logs.slice().reverse().forEach(l => { let s = ""; const d = l.raw; const t = l.missionTime; if(l.type === 'CONTACT') s = `À ${t}, visuel confirmé sur ${fmtVol(d.volume)} ${fmtMen(d.menace)} (${d.activity.toLowerCase()}). Equipement identifié : ${d.equipment.toLowerCase()}. Localisation : ${d.direction}, ${fmtDist(d.distance)}.`; else if(l.type === 'FEU') s = `À ${t}, engagement de ${de(fmtVol(d.volume))} ${fmtMen(d.menace)} au ${d.direction}.`; else if(l.type === 'SANTE') { let etatTxt = d.etat; if (d.etat === "Blessé Léger") etatTxt = "a été blessé légèrement"; if (d.etat === "Blessé Grave") etatTxt = "a été blessé gravement"; if (d.etat === "Inconscient") etatTxt = "est inconscient"; if (d.etat === "DCD") etatTxt = "est décédé"; s = `À ${t}, alerte sanitaire : le ${d.soldatData.name} ${etatTxt}. Prise en charge par l'auxiliaire sanitaire.`; } else if(l.type === 'MVT') s = `À ${t}, mouvement tactique : ${d.typeMvt.toLowerCase()}.`; else if(l.type === 'ENV') s = `À ${t}, relevé environnemental : ${d.category} - ${d.detail}.`; else if(l.type === 'DIVERS') s = `À ${t}, renseignement divers : "${d.details}".`; else if(l.type === 'EVASAN') s = `À ${t}, DEMANDE EVASAN URGENTE transmise au commandement.`; else s = `À ${t} : ${d.details||l.message}.`; txt += `${s}\n`; }); 
                 
                 txt += `\nBILAN DES OBJECTIFS :\n`;
                 if(objectives.length === 0) txt += "Aucun objectif spécifique défini.\n";
@@ -756,6 +906,7 @@
                 <div className="min-h-screen pb-24 bg-black text-emerald-500 font-mono">
                     {modalOpen && <SitrepModal onClose={() => setModalOpen(false)} type={currentActionType} onConfirm={(d) => { addSmartLog(currentActionType, d); setModalOpen(false); }} roster={roster} />}
                     {manageModalOpen && <ManageSoldierModal onClose={() => setManageModalOpen(false)} roster={roster} onDecoSauvage={handleDecoSauvage} onPassation={handlePassation} />}
+                    {incomingMission && <IncomingMissionModal mission={incomingMission} onAccept={handleAcceptMission} onRefuse={handleRefuseMission} />}
                     
                     <header className="bg-slate-950 border-b-2 border-emerald-800 p-2 sm:p-4 sticky top-0 z-40 shadow-lg flex justify-between items-center relative"><div className="flex items-center gap-2 sm:gap-3 overflow-hidden"><div className={`p-1 border border-emerald-800 shrink-0 ${missionActive ? "animate-pulse bg-red-950/50 border-red-500" : "bg-emerald-950/30"}`}><img src="Logo.png" className="h-8 w-8 sm:h-10 sm:w-10 object-contain" alt="Unit Logo" /></div><div className="min-w-0"><h1 className="text-sm sm:text-xl font-black uppercase tracking-[0.15em] text-emerald-400 truncate">{squadData.name} ACTUAL</h1><div className="text-[8px] sm:text-[10px] text-emerald-700 font-mono uppercase tracking-widest truncate">{missionActive ? "/// TRANSMISSION CRYPTÉE" : "/// VEILLE RADIO"}</div></div></div><div className="flex items-center gap-2 sm:gap-4 shrink-0"><HeaderClock className="flex text-emerald-500" /><button onClick={onLogout} className="text-emerald-800 hover:text-red-500 border border-emerald-900 p-2 hover:bg-red-950/20"><Icon name="LogOut" size={20} /></button></div></header>
                     <main className="max-w-4xl mx-auto p-4 relative z-10">
@@ -777,7 +928,7 @@
                         
                         {activeTab === 'roster' && (<div className="space-y-6 animate-fade-in"><TacticalCard title="EFFECTIFS / ORBAT"><div className="flex flex-col gap-3 mb-6 border-b border-emerald-900/50 pb-6"><div className="flex flex-col sm:flex-row gap-2"><div className="flex-1"><input className="w-full bg-black border border-emerald-900 text-emerald-400 p-3 text-sm outline-none uppercase" placeholder="NOM" value={newSoldier.name} onChange={(e)=>setNewSoldier({...newSoldier,name:e.target.value})} /></div><select className="bg-black border border-emerald-900 text-emerald-400 p-3 text-sm outline-none uppercase" value={newSoldier.rank} onChange={(e)=>setNewSoldier({...newSoldier,rank:e.target.value})}>{RANKS.map(r=><option key={r} value={r}>{r}</option>)}</select><select className="bg-black border border-emerald-900 text-emerald-400 p-3 text-sm outline-none uppercase" value={newSoldier.role} onChange={(e)=>setNewSoldier({...newSoldier,role:e.target.value})}>{ROLES.map(r=><option key={r} value={r}>{r}</option>)}</select><button onClick={addSoldier} className="bg-emerald-900/30 border border-emerald-600 text-emerald-400 p-3 hover:bg-emerald-800/50"><Icon name="Plus" size={20}/></button></div></div><div className="flex justify-end mb-2"><button onClick={()=>setManageModalOpen(true)} className="text-xs bg-slate-900 border border-slate-700 text-slate-400 px-3 py-1 hover:text-white">GESTION PERSONNEL</button></div><div className="space-y-2">{roster.map(s=>(<div key={s.id} className="flex items-center justify-between bg-emerald-950/10 border-l-2 border-emerald-600 p-3"><div><div className="text-emerald-400 font-bold font-mono text-sm"><span className="text-emerald-700 mr-2">{s.rank}</span>{s.name}</div><div className="text-emerald-800 text-[10px] uppercase">{s.role}</div></div><span className={`text-[10px] font-bold px-2 py-1 border ${s.status==='APTE'?'border-emerald-800 text-emerald-600':'border-red-800 text-red-500'}`}>{s.status}</span></div>))}</div></TacticalCard></div>)}
                         
-                        {activeTab === 'ops' && (<div className="flex flex-col gap-4 animate-fade-in"><div className="grid grid-cols-2 gap-3 sm:grid-cols-4"><TacticalButton variant="action" onClick={()=>handleActionClick('CONTACT')}><Icon name="Target" size={18}/> CONTACT</TacticalButton><TacticalButton variant="action" onClick={()=>handleActionClick('FEU')}><Icon name="Crosshair" size={18}/> FEU</TacticalButton><TacticalButton variant="action" onClick={()=>handleActionClick('MVT')}><Icon name="ChevronRight" size={18}/> MVT</TacticalButton><TacticalButton variant="action" onClick={()=>handleActionClick('APPUI')}><Icon name="Shield" size={18}/> APPUI</TacticalButton><TacticalButton variant="action" onClick={()=>handleActionClick('RAS')}><Icon name="MapPin" size={18}/> RAS</TacticalButton><TacticalButton variant="danger" onClick={()=>handleActionClick('SANTE')}><Icon name="Activity" size={18}/> AUX SAN</TacticalButton><TacticalButton variant="secondary" onClick={()=>handleActionClick('ENV')}><Icon name="Mountain" size={18}/> MÉTÉO / TOPO</TacticalButton><TacticalButton variant="secondary" onClick={()=>handleActionClick('DIVERS')}><Icon name="FileText" size={18}/> DIVERS</TacticalButton></div><TacticalCard title="MAIN COURANTE" className="flex-1 min-h-[300px] flex flex-col"><div className="flex-1 overflow-y-auto space-y-1 pr-2 max-h-[400px]">{logs.map(log=>(<div key={log.id} className="font-mono text-xs border-l border-emerald-900 pl-2 py-1 mb-1"><span className="text-emerald-700 mr-2">[{log.missionTime}]</span><span className={`font-bold mr-2 ${log.type==='SANTE'?'text-red-500':log.type==='CONTACT'?'text-amber-500':'text-emerald-500'}`}>{log.type}:</span><span className="text-emerald-300 opacity-80">{log.message}</span></div>))}</div></TacticalCard></div>)}
+                        {activeTab === 'ops' && (<div className="flex flex-col gap-4 animate-fade-in"><div className="grid grid-cols-2 gap-3 sm:grid-cols-4"><TacticalButton variant="action" onClick={()=>handleActionClick('CONTACT')}><Icon name="Target" size={18}/> CONTACT</TacticalButton><TacticalButton variant="action" onClick={()=>handleActionClick('FEU')}><Icon name="Crosshair" size={18}/> FEU</TacticalButton><TacticalButton variant="action" onClick={()=>handleActionClick('MVT')}><Icon name="ChevronRight" size={18}/> MVT</TacticalButton><TacticalButton variant="action" onClick={()=>handleActionClick('APPUI')}><Icon name="Shield" size={18}/> APPUI</TacticalButton><TacticalButton variant="action" onClick={()=>handleActionClick('RAS')}><Icon name="MapPin" size={18}/> RAS</TacticalButton><TacticalButton variant="danger" onClick={()=>handleActionClick('SANTE')}><Icon name="Activity" size={18}/> AUX SAN</TacticalButton><TacticalButton variant="secondary" onClick={()=>handleActionClick('EVASAN_REQ')}><Icon name="Activity" size={18}/> EVASAN</TacticalButton><TacticalButton variant="secondary" onClick={()=>handleActionClick('FIRE_REQ')}><Icon name="Crosshair" size={18}/> APPUI FEU</TacticalButton><TacticalButton variant="secondary" onClick={()=>handleActionClick('LOG_REQ')}><Icon name="Box" size={18}/> LOGISTIQUE</TacticalButton><TacticalButton variant="secondary" onClick={()=>handleActionClick('ENV')}><Icon name="Mountain" size={18}/> MÉTÉO / TOPO</TacticalButton><TacticalButton variant="secondary" onClick={()=>handleActionClick('DIVERS')}><Icon name="FileText" size={18}/> DIVERS</TacticalButton><TacticalButton variant="secondary" onClick={()=>handleActionClick('TRANS')}><Icon name="Radio" size={18}/> RADIO</TacticalButton></div><TacticalCard title="MAIN COURANTE" className="flex-1 min-h-[300px] flex flex-col"><div className="flex-1 overflow-y-auto space-y-1 pr-2 max-h-[400px]">{logs.map(log=>(<div key={log.id} className="font-mono text-xs border-l border-emerald-900 pl-2 py-1 mb-1"><span className="text-emerald-700 mr-2">[{log.missionTime}]</span><span className={`font-bold mr-2 ${log.type==='SANTE'?'text-red-500':log.type==='CONTACT'?'text-amber-500':'text-emerald-500'}`}>{log.type}:</span><span className="text-emerald-300 opacity-80">{log.message}</span></div>))}</div></TacticalCard></div>)}
                         
                         {activeTab === 'aar' && (<div className="space-y-4 h-full animate-fade-in">
                             <TacticalCard title="BILAN QUALITATIF">
