@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD NET // C2 SYSTEM V5.3</title>
+    <title>SQUAD NET // C2 SYSTEM V5.4</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -75,6 +75,7 @@
         const VISIBILITY = ["Excellente", "Bonne", "Réduite", "Nulle (Nuit noire)"];
         const TOPO_LINES = ["Ligne de Départ (LD)", "Ligne de Coordination", "Point de Contrôle (CP)", "Limite Avant (LOA)"];
         
+        // EVASAN & APPUI
         const EVASAN_PRIO = ["VITAL (Vie en danger)", "PRIORITAIRE (Urgent)", "ROUTINE (Standard)"];
         const EVASAN_MOYEN = ["Hélicoptère", "Véhicule Terrestre", "À pied"];
         const FIRE_VECTEUR = ["Mortier 81mm", "Mortier 120mm", "Artillerie 155mm", "CAS (Aérien)", "Hélico Attaque"];
@@ -192,7 +193,7 @@
             );
         };
 
-        // --- MODALS ---
+        // --- MODALS DE MISSION ---
         const AssignMissionModal = ({ onClose, onAssign }) => {
             const [title, setTitle] = useState("");
             const [desc, setDesc] = useState("");
@@ -248,11 +249,9 @@
 
         // MODAL SITREP & ENV
         const SitrepModal = ({ onClose, type, onConfirm, roster, currentSquadName, validSquads }) => {
-            const [step, setStep] = useState(validSquads ? 1 : 2); // Start at 1 if selecting squad (CDS), else 2
+            const [step, setStep] = useState(validSquads ? 1 : 2); 
             const [data, setData] = useState({ squad: currentSquadName });
             const [customText, setCustomText] = useState("");
-            
-            // Fix: reset grid if user goes back (not implemented but good practice)
             
             const renderGridInput = () => {
                  return (
@@ -280,7 +279,6 @@
             if (type === 'DIVERS') return (<div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 font-mono"><div className="bg-slate-950 border-2 border-emerald-600 w-full max-w-sm p-4 relative z-10"><h4 className="text-emerald-500 font-mono text-center mb-2 border-b border-emerald-900 pb-2 tracking-widest">OBSERVATION</h4><textarea className="w-full h-32 bg-black border border-emerald-800 text-emerald-400 p-3 font-mono text-sm focus:border-emerald-500 focus:outline-none resize-none mb-4" placeholder="EX: RENS, SUSPECTS..." value={customText} onChange={(e) => setCustomText(e.target.value)} autoFocus /><TacticalButton variant="primary" className="w-full" onClick={() => onConfirm({ details: customText || "RAS" })}><Icon name="Check" size={18} /> VALIDER</TacticalButton><button onClick={onClose} className="absolute top-2 right-2 text-emerald-800"><Icon name="X" size={24}/></button></div></div>);
 
             const renderContent = () => {
-                // Logique de filtre : si validSquads existe (CDS), on l'utilise, sinon (SL) on a currentSquadName
                 const squadList = validSquads && validSquads.length > 0 ? validSquads.map(s => s.id) : (currentSquadName ? [currentSquadName] : SQUADS);
 
                 if (type === 'ENV') {
@@ -995,6 +993,73 @@
                     <nav className="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-emerald-900 p-2 pb-safe z-50"><div className="max-w-4xl mx-auto grid grid-cols-4 gap-1">{['briefing', 'roster', 'ops', 'aar'].map(tab => (<button key={tab} onClick={() => setActiveTab(tab)} className={`flex flex-col items-center p-2 transition-all ${activeTab===tab ? 'bg-emerald-900/30 text-emerald-400 border-t-2 border-emerald-500' : 'text-emerald-900 hover:text-emerald-600'}`}>{tab==='briefing' && <Icon name="FileText" size={20}/>} {tab==='roster' && <Icon name="Users" size={20}/>} {tab==='ops' && <Icon name="Crosshair" size={20}/>} {tab==='aar' && <Icon name="Save" size={20}/>}<span className="text-[9px] uppercase font-bold mt-1 tracking-widest">{tab==='briefing'?'ORDRES':tab==='ops'?'CONDUITE':tab.toUpperCase()}</span></button>))}</div></nav>
                 </div>
             );
+        };
+
+        // --- RACINE ---
+        const App = () => {
+            const [user, setUser] = useState(null);
+            const [squadData, setSquadData] = useStickyState(null, 'squad_session');
+            const [loginState, setLoginState] = useState('idle');
+
+            useEffect(() => { if(!auth) { setUser({uid:'offline'}); return; } signInAnonymously(auth); onAuthStateChanged(auth, setUser); }, []);
+            
+            useEffect(() => {
+                if(loginState === 'pending_hq' && db && user) {
+                    const unsub = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'hq_requests', user.uid), (docSnap) => {
+                        if(docSnap.exists() && docSnap.data().status === 'approved') { setSquadData({ isHQ: true, leaderName: docSnap.data().name, leaderRank: docSnap.data().rank }); setLoginState('idle'); }
+                        else if(docSnap.exists() && docSnap.data().status === 'denied') { alert("ACCÈS REFUSÉ PAR L'ÉTAT-MAJOR"); setLoginState('idle'); }
+                    });
+                    return () => unsub();
+                }
+            }, [loginState, user]);
+
+            const handleHQLogin = async (rank, name) => {
+                 if (!db) { setSquadData({ isHQ: true }); return; }
+                 const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'active_squads'), where("isHQ", "==", true));
+                 
+                 try {
+                    const querySnapshot = await getDocs(q);
+                    if (querySnapshot.empty) {
+                         await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'active_squads', 'HQ_MAIN'), { 
+                             isHQ: true, leaderName: name, leaderRank: rank, userId: user.uid, timestamp: Date.now() 
+                         });
+                         setSquadData({ isHQ: true, leaderName: name, leaderRank: rank });
+                    } else {
+                        setLoginState('pending_hq');
+                        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'hq_requests', user.uid), { 
+                            rank, name, status: 'pending', timestamp: Date.now() 
+                        });
+                    }
+                 } catch(e) {
+                     setSquadData({ isHQ: true, leaderName: name, leaderRank: rank });
+                 }
+            };
+
+            const handleLogout = async () => {
+                if (squadData && db && user) {
+                    try {
+                        const duration = Math.floor((Date.now() - (squadData.startTime || Date.now())) / 1000);
+                        const userStatsRef = doc(db, 'artifacts', appId, 'public', 'data', 'user_stats', squadData.leaderName);
+                        await setDoc(userStatsRef, { totalTime: increment(duration), lastRank: squadData.leaderRank, sessions: increment(1) }, { merge: true });
+                        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'history_logs'), { type: "FIN_SERVICE", message: `FIN DE SERVICE: ${squadData.leaderRank} ${squadData.leaderName} (${Math.floor(duration/60)} min)`, timestamp: Date.now() });
+                        
+                        if(!squadData.isHQ) {
+                            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'active_squads', squadData.name));
+                        } else {
+                             await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'active_squads', 'HQ_MAIN'));
+                        }
+                    } catch(e) {}
+                }
+                setSquadData(null);
+                window.localStorage.clear();
+            };
+
+            if (!user) return <div className="h-screen bg-black flex items-center justify-center text-emerald-500 font-mono tracking-widest animate-pulse">INITIALISATION SYSTÈME...</div>;
+            if (loginState === 'pending_hq') return <div className="h-screen bg-black flex items-center justify-center text-blue-500 font-mono tracking-widest animate-pulse">EN ATTENTE VALIDATION ÉTAT-MAJOR...</div>;
+            if (!squadData) return <SquadSelector user={user} onSelectSquad={setSquadData} onHQRequest={handleHQLogin} />;
+            if (squadData.isHQ) return <HQDashboard onLogout={handleLogout} user={user} />;
+            if (squadData.isSection) return <SectionDashboard onLogout={handleLogout} user={user} squadData={squadData} />;
+            return <MainApp squadData={{...squadData, startTime: squadData.startTime || Date.now()}} user={user} onLogout={handleLogout} />;
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
