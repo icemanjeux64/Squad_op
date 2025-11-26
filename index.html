@@ -168,6 +168,11 @@
                         <button onclick="window.app.addCDS()" class="bg-[#66fcf1]/10 text-[#66fcf1] px-3 py-1 text-xs font-bold border border-[#66fcf1]/50 hover:bg-[#66fcf1]/20 transition flex items-center gap-1">
                             <i data-lucide="plus"></i> CDS
                         </button>
+                        <!-- Effectifs Display -->
+                        <div class="text-right hidden sm:block">
+                            <div class="text-[9px] text-slate-500 uppercase font-bold">Effectifs</div>
+                            <div id="total-effectif" class="text-xl font-bold text-[#66fcf1] leading-none">0</div>
+                        </div>
                         <button onclick="window.app.logout()" class="bg-red-900/20 text-red-200 p-2 border border-red-900/50 hover:bg-red-900/50 transition"><i data-lucide="log-out" class="w-5 h-5"></i></button>
                     </div>
                 </div>
@@ -485,7 +490,6 @@
             toggleCDS: async function(squadId, cdsIndex) {
                 const squad = state.squads[squadId];
                 const currentCds = `CDS ${cdsIndex}`;
-                // Si déjà assigné à ce CDS, on retire. Si libre ou assigné à un autre, on écrase (ou on bloque si on veut)
                 const newCds = (squad.cds_owner === currentCds) ? null : currentCds;
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), { cds_owner: newCds }, { merge: true });
             },
@@ -514,7 +518,6 @@
                     report: reportFull, timestamp: serverTimestamp(), managedBy: state.pseudo, outcome: outcome
                 });
 
-                // Reset complet incluant effectifs à 0 et members vide
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), {
                     sl: '', objective: '', status: 'DISPO', startTime: null, sitrep: '',
                     members: [], effectif: 0, missionHistory: [], rtbStatus: 'NONE', junctionFreq: '', cds_owner: null
@@ -652,64 +655,88 @@
                 }).join('');
             },
             renderStaff: function() {
-                document.getElementById('app').innerHTML = document.getElementById('tpl-staff').innerHTML;
-                document.getElementById('total-effectif').innerText = Object.values(state.squads).reduce((acc, c) => acc + (parseInt(c.effectif)||0), 0);
+                const root = document.getElementById('app');
+                if (!document.getElementById('staff-squad-grid')) {
+                    root.innerHTML = document.getElementById('tpl-staff').innerHTML;
+                }
+
+                // Safe update for header stats
+                const totalEl = document.getElementById('total-effectif');
+                if (totalEl) totalEl.innerText = Object.values(state.squads).reduce((acc, c) => acc + (parseInt(c.effectif)||0), 0);
                 
-                // Base Select with OBJECTIVES
+                // Safe update for inputs only if not focused
+                if(document.getElementById('em-adjoint-input') && document.activeElement.id !== 'em-adjoint-input') 
+                    document.getElementById('em-adjoint-input').value = state.opSettings.adjoint || '';
+                if(document.getElementById('em-stagiaire-input') && document.activeElement.id !== 'em-stagiaire-input') 
+                    document.getElementById('em-stagiaire-input').value = state.opSettings.stagiaire || '';
+                
+                // Base Select - Only update if needed to prevent flickers
                 const baseSel = document.getElementById('em-base-select');
-                baseSel.innerHTML = '<option value="">-- SELECTIONNER --</option>' + OBJECTIVES.map(b => `<option value="${b}" ${state.opSettings.base===b?'selected':''}>${b}</option>`).join('');
+                if(baseSel && baseSel.innerHTML.trim() === '') {
+                    baseSel.innerHTML = '<option value="">-- SELECTIONNER --</option>' + OBJECTIVES.map(b => `<option value="${b}">${b}</option>`).join('');
+                }
+                if(baseSel) baseSel.value = state.opSettings.base || '';
                 
                 // CDS Container
                 const cdsCount = state.opSettings.active_cds_count || 0;
                 const cdsContainer = document.getElementById('cds-container');
-                let cdsHtml = '';
-                for(let i=1; i<=cdsCount; i++) {
-                    cdsHtml += `<div class="flex items-center gap-1 bg-white/5 px-2 py-1 border border-white/10 rounded">
-                        <span class="text-[10px] font-bold text-[#66fcf1] uppercase mr-2">CHEF DE SECTION ${i}</span>
-                        ${SQUADS_CONFIG.map(s => {
-                            const squadData = state.squads[s.id] || {};
-                            const isMine = squadData.cds_owner === `CDS ${i}`;
-                            const isOthers = squadData.cds_owner && !isMine;
-                            return `<button onclick="window.app.toggleCDS('${s.id}', ${i})" class="text-[9px] px-1.5 py-0.5 font-bold uppercase border transition-colors ${isMine ? 'bg-emerald-500 text-black border-emerald-500' : (isOthers ? 'bg-black text-slate-600 border-slate-800 cursor-not-allowed' : 'bg-transparent text-slate-400 border-slate-600 hover:border-white')}" ${isOthers?'disabled':''}>${s.name.substring(0,1)}</button>`;
-                        }).join('')}
-                    </div>`;
+                if(cdsContainer) {
+                    let cdsHtml = '';
+                    for(let i=1; i<=cdsCount; i++) {
+                        cdsHtml += `<div class="flex items-center gap-1 bg-white/5 px-2 py-1 border border-white/10 rounded">
+                            <span class="text-[10px] font-bold text-[#66fcf1] uppercase mr-2">CHEF DE SECTION ${i}</span>
+                            ${SQUADS_CONFIG.map(s => {
+                                const squadData = state.squads[s.id] || {};
+                                const isMine = squadData.cds_owner === `CDS ${i}`;
+                                const isOthers = squadData.cds_owner && !isMine;
+                                return `<button onclick="window.app.toggleCDS('${s.id}', ${i})" class="text-[9px] px-1.5 py-0.5 font-bold uppercase border transition-colors ${isMine ? 'bg-emerald-500 text-black border-emerald-500' : (isOthers ? 'bg-black text-slate-600 border-slate-800 cursor-not-allowed' : 'bg-transparent text-slate-400 border-slate-600 hover:border-white')}" ${isOthers?'disabled':''}>${s.name.substring(0,1)}</button>`;
+                            }).join('')}
+                        </div>`;
+                    }
+                    cdsContainer.innerHTML = cdsHtml;
                 }
-                cdsContainer.innerHTML = cdsHtml;
 
                 const container = document.getElementById('squad-container');
-                container.innerHTML = SQUADS_CONFIG.map(s => {
-                    const d = state.squads[s.id] || {};
-                    let border = "border-white/10", dot = "bg-slate-600", alert = "";
-                    if(d.rtbStatus==='REQUESTED') { border="border-orange-500 animate-pulse"; alert=`<div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-orange-600 text-black text-xs font-bold px-3 py-1 rounded shadow-lg animate-bounce z-10">REQ: RTB</div>`; }
-                    else if(d.status==='ACTIVE') { border="border-emerald-500/50"; dot="bg-emerald-500"; }
-                    
-                    // Affichage CDS Owner
-                    const cdsBadge = d.cds_owner ? `<div class="absolute top-2 right-2 bg-indigo-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">${d.cds_owner}</div>` : '';
+                if(container) {
+                    container.innerHTML = SQUADS_CONFIG.map(s => {
+                        const d = state.squads[s.id] || {};
+                        let border = "border-white/10", dot = "bg-slate-600", alert = "";
+                        if(d.rtbStatus==='REQUESTED') { border="border-orange-500 animate-pulse"; alert=`<div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-orange-600 text-black text-xs font-bold px-3 py-1 rounded shadow-lg animate-bounce z-10">REQ: RTB</div>`; }
+                        else if(d.status==='ACTIVE') { border="border-emerald-500/50"; dot="bg-emerald-500"; }
+                        
+                        const cdsBadge = d.cds_owner ? `<div class="absolute top-2 right-2 bg-indigo-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">${d.cds_owner}</div>` : '';
 
-                    return `<div class="military-box ${border} p-3 flex flex-col gap-2 min-h-[160px]">
-                        ${alert} ${cdsBadge}
-                        <div class="corner-tl"></div><div class="corner-tr"></div><div class="corner-bl"></div><div class="corner-br"></div>
-                        <div class="flex justify-between items-start"><div class="flex items-center gap-2"><div class="w-2 h-2 rounded-sm ${dot}"></div><h3 class="text-lg font-black uppercase tracking-wider text-white">${s.name}</h3><span class="text-[10px] font-mono text-mil-cyan bg-[#1f2833] px-1">${s.freq}</span></div><input type="number" onchange="window.app.updateSquad('${s.id}', 'effectif', this.value)" class="w-10 bg-black border border-slate-700 text-center font-bold text-white focus:border-mil-cyan outline-none text-sm" value="${d.effectif||''}" placeholder="0"></div>
-                        <div class="grid grid-cols-2 gap-2 mt-1">
-                            <div class="relative"><label class="text-[8px] uppercase text-slate-500 block mb-0.5">Chef d'Escouade</label><input list="sl-suggestions-list" type="text" onchange="window.app.updateSquad('${s.id}', 'sl', this.value)" class="w-full bg-[#1f2833] border ${d.sl?'border-white/40 text-white':'border-slate-700 text-slate-500'} text-xs py-1.5 px-2 uppercase outline-none focus:border-mil-cyan font-bold" placeholder="RECHERCHE..." value="${d.sl||''}"></div>
-                            <div class="relative"><label class="text-[8px] uppercase text-slate-500 block mb-0.5">Objectif</label><select onchange="window.app.updateSquad('${s.id}', 'objective', this.value)" class="w-full bg-[#1f2833] border border-slate-700 text-xs py-1.5 px-2 uppercase text-white outline-none focus:border-mil-cyan appearance-none"><option value="">-- NÉANT --</option>${OBJECTIVES.map(o => `<option value="${o}" ${d.objective===o?'selected':''}>${o}</option>`).join('')}</select></div>
-                        </div>
-                        <div class="flex-1 flex flex-col justify-end gap-2"><div class="w-full bg-black/40 border border-white/5 p-1.5 min-h-[30px] flex items-center"><i data-lucide="activity" class="w-3 h-3 text-slate-600 mr-2 shrink-0"></i><span class="text-[10px] text-mil-cyan font-mono truncate w-full uppercase">${d.sitrep || 'AUCUN RAPPORT'}</span></div>
-                        ${d.rtbStatus === 'REQUESTED' ? `<div class="flex gap-2"><button onclick="window.app.approveRTB('${s.id}', true)" class="flex-1 bg-emerald-900/80 hover:bg-emerald-800 text-white text-[10px] py-1 font-bold border border-emerald-700">ACCORDER</button><button onclick="window.app.approveRTB('${s.id}', false)" class="flex-1 bg-red-900/80 hover:bg-red-800 text-white text-[10px] py-1 font-bold border border-red-700">REFUSER</button></div>` : ''}
-                        </div>
-                        ${d.sl ? `<button onclick="if(confirm('Terminer mission ${s.name}?')) window.app.endMission('${s.id}', 'FIN EM')" class="absolute bottom-2 right-2 p-1 text-red-500/50 hover:text-red-500 transition-colors"><i data-lucide="log-out" class="w-4 h-4"></i></button>` : ''}
-                    </div>`;
-                }).join('');
+                        return `<div class="military-box ${border} p-3 flex flex-col gap-2 min-h-[160px]">
+                            ${alert} ${cdsBadge}
+                            <div class="corner-tl"></div><div class="corner-tr"></div><div class="corner-bl"></div><div class="corner-br"></div>
+                            <div class="flex justify-between items-start"><div class="flex items-center gap-2"><div class="w-2 h-2 rounded-sm ${dot}"></div><h3 class="text-lg font-black uppercase tracking-wider text-white">${s.name}</h3><span class="text-[10px] font-mono text-mil-cyan bg-[#1f2833] px-1">${s.freq}</span></div><input type="number" onchange="window.app.updateSquad('${s.id}', 'effectif', this.value)" class="w-10 bg-black border border-slate-700 text-center font-bold text-white focus:border-mil-cyan outline-none text-sm" value="${d.effectif||''}" placeholder="0"></div>
+                            <div class="grid grid-cols-2 gap-2 mt-1">
+                                <div class="relative"><label class="text-[8px] uppercase text-slate-500 block mb-0.5">Chef d'Escouade</label><input list="sl-suggestions-list" type="text" onchange="window.app.updateSquad('${s.id}', 'sl', this.value)" class="w-full bg-[#1f2833] border ${d.sl?'border-white/40 text-white':'border-slate-700 text-slate-500'} text-xs py-1.5 px-2 uppercase outline-none focus:border-mil-cyan font-bold" placeholder="RECHERCHE..." value="${d.sl||''}"></div>
+                                <div class="relative"><label class="text-[8px] uppercase text-slate-500 block mb-0.5">Objectif</label><select onchange="window.app.updateSquad('${s.id}', 'objective', this.value)" class="w-full bg-[#1f2833] border border-slate-700 text-xs py-1.5 px-2 uppercase text-white outline-none focus:border-mil-cyan appearance-none"><option value="">-- NÉANT --</option>${OBJECTIVES.map(o => `<option value="${o}" ${d.objective===o?'selected':''}>${o}</option>`).join('')}</select></div>
+                            </div>
+                            <div class="flex-1 flex flex-col justify-end gap-2"><div class="w-full bg-black/40 border border-white/5 p-1.5 min-h-[30px] flex items-center"><i data-lucide="activity" class="w-3 h-3 text-slate-600 mr-2 shrink-0"></i><span class="text-[10px] text-mil-cyan font-mono truncate w-full uppercase">${d.sitrep || 'AUCUN RAPPORT'}</span></div>
+                            ${d.rtbStatus === 'REQUESTED' ? `<div class="flex gap-2"><button onclick="window.app.approveRTB('${s.id}', true)" class="flex-1 bg-emerald-900/80 hover:bg-emerald-800 text-white text-[10px] py-1 font-bold border border-emerald-700">ACCORDER</button><button onclick="window.app.approveRTB('${s.id}', false)" class="flex-1 bg-red-900/80 hover:bg-red-800 text-white text-[10px] py-1 font-bold border border-red-700">REFUSER</button></div>` : ''}
+                            </div>
+                            ${d.sl ? `<button onclick="if(confirm('Terminer mission ${s.name}?')) window.app.endMission('${s.id}', 'FIN EM')" class="absolute bottom-2 right-2 p-1 text-red-500/50 hover:text-red-500 transition-colors"><i data-lucide="log-out" class="w-4 h-4"></i></button>` : ''}
+                        </div>`;
+                    }).join('');
+                }
                 
-                // Logs & Leaderboard
-                const counts = {}; state.logs.forEach(l => { counts[l.sl] = (counts[l.sl]||0)+1; });
-                document.getElementById('leaderboard-container').innerHTML = Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([n,c],i) => `<div class="flex justify-between items-center py-1 border-b border-white/5 text-xs"><div class="flex items-center gap-2"><span class="text-slate-500 w-4">${i+1}.</span><span class="text-slate-300 font-bold">${n}</span></div><span class="text-mil-cyan">${c}</span></div>`).join('');
-                document.getElementById('logs-container').innerHTML = state.logs.map(l => {
-                    let icon = 'help-circle', col = 'border-slate-500';
-                    if(l.outcome === 'SUCCESS') { icon = 'check-circle'; col = 'border-emerald-500'; }
-                    else if(l.outcome === 'FAILURE') { icon = 'x-circle'; col = 'border-red-500'; }
-                    return `<div onclick="window.app.openReportModal('${l.id}')" class="bg-white/5 p-2 border-l-2 ${col} cursor-pointer hover:bg-white/10 transition-colors"><div class="flex justify-between mb-1 items-center"><div class="flex items-center gap-2"><i data-lucide="${icon}" class="w-3 h-3"></i><span class="font-bold text-[#66fcf1] text-[10px] uppercase">${l.sl}</span><span class="text-[9px] text-slate-400 uppercase">(${l.squad})</span></div><span class="text-[9px] text-slate-500 font-mono">${l.timestamp ? new Date(l.timestamp.seconds*1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : ''}</span></div><div class="text-[10px] text-slate-300 uppercase truncate">${l.report.split('\n')[0]}</div></div>`;
-                }).join('');
+                const lbContainer = document.getElementById('leaderboard-container');
+                if(lbContainer) {
+                    const counts = {}; state.logs.forEach(l => { counts[l.sl] = (counts[l.sl]||0)+1; });
+                    lbContainer.innerHTML = Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([n,c],i) => `<div class="flex justify-between items-center py-1 border-b border-white/5 text-xs"><div class="flex items-center gap-2"><span class="text-slate-500 w-4">${i+1}.</span><span class="text-slate-300 font-bold">${n}</span></div><span class="text-mil-cyan">${c}</span></div>`).join('');
+                }
+
+                const logsContainer = document.getElementById('logs-container');
+                if(logsContainer) {
+                    logsContainer.innerHTML = state.logs.map(l => {
+                        let icon = 'help-circle', col = 'border-slate-500';
+                        if(l.outcome === 'SUCCESS') { icon = 'check-circle'; col = 'border-emerald-500'; }
+                        else if(l.outcome === 'FAILURE') { icon = 'x-circle'; col = 'border-red-500'; }
+                        return `<div onclick="window.app.openReportModal('${l.id}')" class="bg-white/5 p-2 border-l-2 ${col} cursor-pointer hover:bg-white/10 transition-colors"><div class="flex justify-between mb-1 items-center"><div class="flex items-center gap-2"><i data-lucide="${icon}" class="w-3 h-3"></i><span class="font-bold text-[#66fcf1] text-[10px] uppercase">${l.sl}</span><span class="text-[9px] text-slate-400 uppercase">(${l.squad})</span></div><span class="text-[9px] text-slate-500 font-mono">${l.timestamp ? new Date(l.timestamp.seconds*1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : ''}</span></div><div class="text-[10px] text-slate-300 uppercase truncate">${l.report.split('\n')[0]}</div></div>`;
+                    }).join('');
+                }
             },
             
             renderSitrepModal: function() {
@@ -753,8 +780,11 @@
                 const squad = state.squads[squadId];
                 const config = SQUADS_CONFIG.find(s => s.id === squadId);
                 
-                document.getElementById('sl-base-display').innerText = state.opSettings.base || 'N/A';
-                document.getElementById('sl-adjoint-display').innerText = state.opSettings.adjoint || 'N/A';
+                const baseDisp = document.getElementById('sl-base-display');
+                if(baseDisp) baseDisp.innerText = state.opSettings.base || 'N/A';
+                const adjDisp = document.getElementById('sl-adjoint-display');
+                if(adjDisp) adjDisp.innerText = state.opSettings.adjoint || 'N/A';
+                
                 document.getElementById('sl-squad-name').innerText = config.name;
                 document.getElementById('sl-freq').innerText = config.freq;
                 document.getElementById('sl-username').innerText = state.pseudo;
