@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD NET // C2 SYSTEM V5.1</title>
+    <title>SQUAD NET // C2 SYSTEM V5.3</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -192,7 +192,7 @@
             );
         };
 
-        // --- MODALS DE MISSION ---
+        // --- MODALS ---
         const AssignMissionModal = ({ onClose, onAssign }) => {
             const [title, setTitle] = useState("");
             const [desc, setDesc] = useState("");
@@ -202,7 +202,8 @@
                         <h4 className="text-blue-500 font-mono text-center mb-4 border-b border-blue-900 pb-2 tracking-widest">TRANSMETTRE ORDRE (FRAGO)</h4>
                         <div className="space-y-4">
                             <InputField label="OBJET" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: NOUVEL OBJECTIF" />
-                            <textarea className="w-full h-32 bg-black border border-blue-800 text-blue-400 p-3 font-mono text-sm focus:border-blue-500 focus:outline-none resize-none mb-4" placeholder="Détails de la mission..." value={desc} onChange={(e) => setDesc(e.target.value)} />
+                            <textarea className="w-full h-32 bg-black border border-blue-800 text-blue-400 p-3 font-mono text-sm focus:border-blue-500 focus:outline-none resize-none mb-4" 
+                                placeholder="Détails de la mission..." value={desc} onChange={(e) => setDesc(e.target.value)} />
                             <div className="flex gap-2"><TacticalButton variant="danger" className="flex-1" onClick={onClose}>ANNULER</TacticalButton><TacticalButton variant="hq" className="flex-1" onClick={() => onAssign(title, desc)}>TRANSMETTRE</TacticalButton></div>
                         </div>
                     </div>
@@ -247,14 +248,41 @@
 
         // MODAL SITREP & ENV
         const SitrepModal = ({ onClose, type, onConfirm, roster, currentSquadName, validSquads }) => {
-            const [step, setStep] = useState(validSquads ? 1 : 2); 
+            const [step, setStep] = useState(validSquads ? 1 : 2); // Start at 1 if selecting squad (CDS), else 2
             const [data, setData] = useState({ squad: currentSquadName });
             const [customText, setCustomText] = useState("");
+            
+            // Fix: reset grid if user goes back (not implemented but good practice)
+            
+            const renderGridInput = () => {
+                 return (
+                    <div className="space-y-4">
+                        <h4 className="text-amber-500 font-mono text-center mb-4 border-b border-amber-900 pb-2">COORDONNÉES / GRID</h4>
+                        <input className="w-full bg-black border border-amber-700 text-amber-400 p-3 font-mono text-center text-lg focus:border-amber-500 focus:outline-none uppercase" 
+                            placeholder="Ex: 046-113" 
+                            autoFocus
+                            onKeyDown={(e) => { if(e.key === 'Enter') onConfirm({ ...data, grid: e.target.value }); }}
+                        />
+                         <div className="text-[10px] text-center text-amber-800">APPUYEZ SUR ENTRÉE POUR VALIDER</div>
+                         <div className="grid grid-cols-2 gap-2 mt-4">
+                             <button onClick={onClose} className="w-full py-2 border border-red-900 text-red-700 hover:text-red-500 text-xs font-bold">ANNULER</button>
+                             <button onClick={() => {
+                                 const val = document.querySelector('input[placeholder="Ex: 046-113"]')?.value;
+                                 if(val) onConfirm({ ...data, grid: val });
+                             }} className="w-full py-2 bg-amber-900/30 border border-amber-500 text-amber-500 hover:text-white text-xs font-bold">VALIDER</button>
+                         </div>
+                    </div>
+                );
+            };
+
             const handleSelection = (key, value) => { setData(prev => ({ ...prev, [key]: value })); setStep(prev => prev + 1); };
 
             if (type === 'DIVERS') return (<div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 font-mono"><div className="bg-slate-950 border-2 border-emerald-600 w-full max-w-sm p-4 relative z-10"><h4 className="text-emerald-500 font-mono text-center mb-2 border-b border-emerald-900 pb-2 tracking-widest">OBSERVATION</h4><textarea className="w-full h-32 bg-black border border-emerald-800 text-emerald-400 p-3 font-mono text-sm focus:border-emerald-500 focus:outline-none resize-none mb-4" placeholder="EX: RENS, SUSPECTS..." value={customText} onChange={(e) => setCustomText(e.target.value)} autoFocus /><TacticalButton variant="primary" className="w-full" onClick={() => onConfirm({ details: customText || "RAS" })}><Icon name="Check" size={18} /> VALIDER</TacticalButton><button onClick={onClose} className="absolute top-2 right-2 text-emerald-800"><Icon name="X" size={24}/></button></div></div>);
 
             const renderContent = () => {
+                // Logique de filtre : si validSquads existe (CDS), on l'utilise, sinon (SL) on a currentSquadName
+                const squadList = validSquads && validSquads.length > 0 ? validSquads.map(s => s.id) : (currentSquadName ? [currentSquadName] : SQUADS);
+
                 if (type === 'ENV') {
                     if(step===2) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">CATÉGORIE</h4><div className="grid grid-cols-1 gap-2"><TacticalButton variant="modal" onClick={() => handleSelection('category', 'MÉTÉO')}>MÉTÉO</TacticalButton><TacticalButton variant="modal" onClick={() => handleSelection('category', 'VISIBILITÉ')}>VISIBILITÉ</TacticalButton><TacticalButton variant="modal" onClick={() => handleSelection('category', 'TOPOGRAPHIE')}>TOPOGRAPHIE (Ligne/Point)</TacticalButton></div></>);
                     if(data.category === 'MÉTÉO') return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">CONDITION</h4><div className="grid grid-cols-1 gap-2">{WEATHER.map(w => <TacticalButton key={w} variant="modal" onClick={() => onConfirm({ ...data, detail: w })}>{w}</TacticalButton>)}</div></>);
@@ -262,15 +290,12 @@
                     if(data.category === 'TOPOGRAPHIE') return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">FRANCHISSEMENT</h4><div className="grid grid-cols-1 gap-2">{TOPO_LINES.map(l => <TacticalButton key={l} variant="modal" onClick={() => onConfirm({ ...data, detail: l })}>{l}</TacticalButton>)}</div></>);
                 }
 
-                // Logique de filtre : si validSquads existe (CDS), on l'utilise, sinon (SL) on a currentSquadName
-                const squadList = validSquads && validSquads.length > 0 ? validSquads.map(s => s.id) : (currentSquadName ? [currentSquadName] : SQUADS);
-
                 if (type === 'EVASAN_REQ') {
-                    // Etape 1 : Choix Squad (sautée si SL)
+                    // Etape 1 : Choix Squad (sautée si SL car step init à 2)
                     if(step===1) return (<><h4 className="text-amber-500 font-mono text-center mb-4 border-b border-amber-900 pb-2">UNITÉ CONCERNÉE</h4><div className="grid grid-cols-2 gap-2">{squadList.map(s => <TacticalButton key={s} variant="modal" onClick={() => handleSelection('squad', s)}>{s}</TacticalButton>)}</div></>);
                     if(step===2) return (<><h4 className="text-amber-500 font-mono text-center mb-4 border-b border-amber-900 pb-2">PRIORITÉ</h4><div className="grid grid-cols-1 gap-2">{EVASAN_PRIO.map(p => <TacticalButton key={p} variant="modal" onClick={() => handleSelection('urgence', p)}>{p}</TacticalButton>)}</div></>);
                     if(step===3) return (<><h4 className="text-amber-500 font-mono text-center mb-4 border-b border-amber-900 pb-2">MOYEN</h4><div className="grid grid-cols-1 gap-2">{EVASAN_MOYEN.map(m => <TacticalButton key={m} variant="modal" onClick={() => handleSelection('moyen', m)}>{m}</TacticalButton>)}</div></>);
-                    if(step===4) return (<><h4 className="text-amber-500 font-mono text-center mb-4 border-b border-amber-900 pb-2">NB BLESSÉS</h4><div className="grid grid-cols-2 gap-2">{[1,2,3,4,5].map(n => <TacticalButton key={n} variant="modal" onClick={() => onConfirm({...data, nbPax: n})}>{n} PAX</TacticalButton>)}</div></>);
+                    if(step===4) return (<><h4 className="text-amber-500 font-mono text-center mb-4 border-b border-amber-900 pb-2">NOMBRE DE BLESSÉS</h4><div className="grid grid-cols-2 gap-2">{[1,2,3,4,5].map(n => <TacticalButton key={n} variant="modal" onClick={() => handleSelection('nbPax', n)}>{n} PAX</TacticalButton>)}</div></>);
                     if(step===5) return renderGridInput();
                 }
                  if (type === 'FIRE_REQ') {
@@ -301,20 +326,6 @@
                 }
                 if (type === 'MVT') return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">MANOEUVRE</h4><div className="grid grid-cols-1 gap-2">{MVT_TYPES.map(t => <TacticalButton key={t} variant="modal" onClick={() => onConfirm({ typeMvt: t })}>{t}</TacticalButton>)}</div></>);
                 return <div>Erreur</div>;
-            };
-
-            const renderGridInput = () => {
-                 return (
-                    <div className="space-y-4">
-                        <h4 className="text-amber-500 font-mono text-center mb-4 border-b border-amber-900 pb-2">COORDONNÉES / GRID</h4>
-                        <input className="w-full bg-black border border-amber-700 text-amber-400 p-3 font-mono text-center text-lg focus:border-amber-500 focus:outline-none uppercase" 
-                            placeholder="Ex: 046-113" 
-                            autoFocus
-                            onKeyDown={(e) => { if(e.key === 'Enter') onConfirm({ ...data, grid: e.target.value }); }}
-                        />
-                         <div className="text-[10px] text-center text-amber-800">APPUYEZ SUR ENTRÉE POUR VALIDER</div>
-                    </div>
-                );
             };
 
             return (<div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 font-mono"><div className="bg-slate-950 border-2 border-emerald-600 w-full max-w-sm p-0 shadow-[0_0_50px_rgba(16,185,129,0.2)] relative z-10"><div className="bg-emerald-950/50 border-b border-emerald-600 p-3 flex justify-between items-center"><div className="flex items-center gap-2"><div className="w-2 h-2 bg-emerald-500 animate-pulse"></div><h3 className="text-emerald-400 font-bold text-lg tracking-widest">SITREP // {type}</h3></div><button onClick={onClose} className="text-emerald-800 hover:text-red-500"><Icon name="X" size={24}/></button></div><div className="p-6">{renderContent()}</div></div></div>);
@@ -808,12 +819,12 @@
             const [manageModalOpen, setManageModalOpen] = useState(false);
             const [currentActionType, setCurrentActionType] = useState(null);
             const [incomingMission, setIncomingMission] = useState(null);
+            const [mySection, setMySection] = useState(null);
             
             const [newSoldier, setNewSoldier] = useState({ name: "", rank: "Soldat", role: "GV" });
             const [objectives, setObjectives] = useStickyState([], `${squadPrefix}_objs`);
             const [newObjText, setNewObjText] = useState("");
             const [debrief, setDebrief] = useStickyState({ morale: "Moyen", plus: "", minus: "", nominations: "" }, `${squadPrefix}_debrief`);
-            const [mySection, setMySection] = useState(null);
 
             // --- ECOUTEUR DE SURVIE (ANTI-DISSOLUTION) & MISSION UPDATE ---
             useEffect(() => {
