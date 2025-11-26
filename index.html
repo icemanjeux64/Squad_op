@@ -103,7 +103,7 @@
                     <span class="text-red-700">FOF</span>NET
                 </h1>
                 <div class="flex justify-center gap-4 text-[10px] uppercase tracking-[0.3em] text-slate-500">
-                    <span>Secure V.3.5</span><span>•</span><span>Ops Center</span><span>•</span><span class="text-emerald-500 animate-pulse">Online</span>
+                    <span>Secure V.3.6</span><span>•</span><span>Ops Center</span><span>•</span><span class="text-emerald-500 animate-pulse">Online</span>
                 </div>
             </div>
 
@@ -509,8 +509,9 @@
 
             endMission: async function(squadId, note, outcome = "UNKNOWN") {
                 const sData = state.squads[squadId];
-                const historySummary = (sData.missionHistory || []).map(e => `[${new Date(e.time).toLocaleTimeString()}] ${e.content}`).join('\n');
-                const reportFull = `RAPPORT DE MISSION\n------------------\nNOTE SL: ${note}\n\nJOURNAL DE MARCHE:\n${historySummary}`;
+                
+                // Generation du rapport final propre avec le générateur
+                const reportFull = this.generateMilitaryReport(sData, note);
 
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'mission_logs'), {
                     sl: sData.sl, squad: sData.name, objective: sData.objective,
@@ -524,6 +525,55 @@
                 });
                 
                 if (state.role === 'SL') this.logout();
+            },
+
+            // --- GENERATEUR DE RAPPORT MILITAIRE ---
+            generateMilitaryReport: function(squad, userNote) {
+                let report = `RAPPORT DE MISSION / PATROUILLE\n`;
+                report += `=================================\n`;
+                report += `UNITÉ : ${squad.name} (${squad.sl})\n`;
+                report += `OBJECTIF : ${squad.objective || 'N/A'}\n`;
+                report += `DATE : ${new Date().toLocaleDateString()}\n\n`;
+                
+                report += `1. IDENTIFICATION / EFFECTIFS\n`;
+                report += `- Chef de Groupe : ${squad.sl}\n`;
+                report += `- Effectif total : ${squad.effectif}\n`;
+                if (squad.members && squad.members.length > 0) {
+                    report += `- Pax : ${squad.members.map(m => `${m.grade} ${m.name} (${m.role})`).join(', ')}\n`;
+                }
+                report += `\n`;
+
+                report += `2. CHRONOLOGIE DES ÉVÉNEMENTS\n`;
+                const history = squad.missionHistory || [];
+                if (history.length === 0) {
+                    report += `- R.A.S (Aucun événement noté)\n`;
+                } else {
+                    history.forEach(h => {
+                        const time = new Date(h.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                        let content = h.content;
+                        
+                        // Re-formatting "Beauty"
+                        if (content.startsWith('CONTACT:')) {
+                            content = content.replace('CONTACT:', 'CONTACT ENNEMI -');
+                        } else if (content.startsWith('SANITAIRE:')) {
+                            content = content.replace('SANITAIRE:', 'BILAN SANITAIRE -');
+                        } else if (content.startsWith('LOG:')) {
+                            content = content.replace('LOG:', 'DEMANDE LOGISTIQUE -');
+                        } else if (content === 'DÉPART MISSION') {
+                            content = 'DÉPART MISSION - SORTIE DE BASE';
+                        } else if (content === 'RETOUR BASE') {
+                            content = 'RETOUR BASE - FIN DE MOUVEMENT';
+                        }
+
+                        report += `[${time}] ${content}\n`;
+                    });
+                }
+                report += `\n`;
+
+                report += `3. SYNTHÈSE / CONCLUSION\n`;
+                report += `${userNote || "Aucune note particulière ajoutée."}\n`;
+                report += `=================================\n`;
+                return report;
             },
 
             // --- SL ACTIONS ---
@@ -606,9 +656,26 @@
             },
             sitrepAction: function(id, form, label) {
                 const squadId = Object.keys(state.squads).find(k => state.squads[k].sl === state.pseudo);
-                if (id === 'rtb') { if(confirm("Demander RTB à l'EM ?")) this.requestRTB(squadId); } 
-                else { this.openSitrepModal(form, label); }
+                
+                if (id === 'rtb') { 
+                    if(confirm("Demander RTB à l'EM ?")) this.requestRTB(squadId); 
+                } else if (id === 'depart') {
+                    this.submitSitrepDirect(squadId, 'DÉPART MISSION');
+                } else if (id === 'retour') {
+                    this.submitSitrepDirect(squadId, 'RETOUR BASE');
+                } else { 
+                    this.openSitrepModal(form, label); 
+                }
             },
+            
+            // Helper pour envoyer un SITREP direct sans modal (Top Départ / Retour)
+            submitSitrepDirect: async function(squadId, msg) {
+                const ts = new Date().toISOString();
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), {
+                    sitrep: msg, lastSitrepTime: ts, missionHistory: arrayUnion({ type: 'SITREP', content: msg, time: ts })
+                });
+            },
+
             sendEndMission: function() {
                 const squadId = Object.keys(state.squads).find(k => state.squads[k].sl === state.pseudo);
                 const note = document.getElementById('final-report-input').value;
@@ -813,8 +880,21 @@
                         </div>
                         <div class="flex-1">
                             <div class="flex items-center gap-2 mb-3 text-[10px] uppercase font-bold text-slate-500 tracking-widest"><i data-lucide="activity" class="w-3 h-3"></i> C.R. Tactiques<div class="h-px bg-slate-800 flex-1"></div></div>
+                            
+                            <!-- JALONS DEBUT / FIN -->
+                            <div class="grid grid-cols-2 gap-3 mb-3">
+                                <button onclick="window.app.sitrepAction('depart', 'SIMPLE', 'TOP DÉPART')" class="bg-emerald-900/50 border border-emerald-500/50 hover:bg-emerald-500/20 active:scale-95 transition-all text-white p-4 flex flex-col items-center justify-center gap-2 relative overflow-hidden group">
+                                    <i data-lucide="play" class="w-8 h-8 z-10 text-emerald-500"></i>
+                                    <span class="font-bold text-sm text-center uppercase z-10 tracking-wider text-emerald-400">TOP DÉPART</span>
+                                </button>
+                                <button onclick="window.app.sitrepAction('retour', 'SIMPLE', 'RETOUR BASE')" class="bg-blue-900/50 border border-blue-500/50 hover:bg-blue-500/20 active:scale-95 transition-all text-white p-4 flex flex-col items-center justify-center gap-2 relative overflow-hidden group">
+                                    <i data-lucide="home" class="w-8 h-8 z-10 text-blue-500"></i>
+                                    <span class="font-bold text-sm text-center uppercase z-10 tracking-wider text-blue-400">RETOUR BASE</span>
+                                </button>
+                            </div>
+
                             <div class="grid grid-cols-2 gap-3 h-full pb-4">
-                                ${[{id:'pos', label:'POSITION', icon:'map-pin', color:'bg-emerald-800 border-emerald-600', form:'SIMPLE'}, {id:'move', label:'MOUVEMENT', icon:'navigation', color:'bg-blue-800 border-blue-600', form:'SIMPLE'}, {id:'contact', label:'CONTACT', icon:'crosshair', color:'bg-red-900 border-red-600 animate-pulse', form:'CONTACT'}, {id:'med', label:'SANITAIRE', icon:'heart-pulse', color:'bg-orange-800 border-orange-600', form:'MEDICAL'}, {id:'log', label:'LOGISTIQUE', icon:'box', color:'bg-yellow-800 border-yellow-600', form:'LOG'}, {id:'rtb', label:'DEMANDE RTB', icon:'arrow-right', color:'bg-slate-700 border-slate-500', form:'RTB'}].map(b => `
+                                ${[{id:'pos', label:'POSITION', icon:'map-pin', color:'bg-slate-800 border-slate-600', form:'SIMPLE'}, {id:'contact', label:'CONTACT', icon:'crosshair', color:'bg-red-900 border-red-600 animate-pulse', form:'CONTACT'}, {id:'med', label:'SANITAIRE', icon:'heart-pulse', color:'bg-orange-800 border-orange-600', form:'MEDICAL'}, {id:'log', label:'LOGISTIQUE', icon:'box', color:'bg-yellow-800 border-yellow-600', form:'LOG'}, {id:'rtb', label:'DEMANDE RTB', icon:'arrow-right', color:'bg-slate-700 border-slate-500', form:'RTB'}].map(b => `
                                     <button onclick="window.app.sitrepAction('${b.id}', '${b.form}', '${b.label}')" class="${b.color} bg-opacity-10 border hover:bg-opacity-20 active:scale-95 transition-all text-white p-4 flex flex-col items-center justify-center gap-2 relative overflow-hidden group">
                                         <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent pointer-events-none"></div>
                                         <i data-lucide="${b.icon}" class="w-8 h-8 z-10 opacity-80 group-hover:scale-110 transition-transform"></i>
@@ -827,7 +907,15 @@
                 } else if(state.slTab === 'ESCOUADE') {
                     container.innerHTML = `<div class="space-y-4"><div class="flex justify-between items-center mb-2 pb-2 border-b border-white/10"><h3 class="text-white font-bold uppercase text-xs tracking-widest">Tableau des Effectifs</h3><button onclick="window.app.addMember()" class="bg-[#66fcf1] hover:bg-white text-black text-[10px] font-bold px-3 py-1.5 uppercase flex items-center gap-1"><i data-lucide="user" class="w-3 h-3"></i> Ajouter</button></div><div class="space-y-2">${(squad.members||[]).map((m,i)=>`<div class="bg-white/5 p-2 border border-white/5 flex items-center gap-2 group hover:border-white/20 transition-colors"><span class="text-[10px] text-slate-500 font-mono w-4">${i+1}</span><select onchange="window.app.updateMember(${i}, 'grade', this.value)" class="bg-black text-[#66fcf1] text-xs p-1 border border-slate-700 outline-none w-20 uppercase font-bold">${GRADES.map(g=>`<option value="${g}" ${m.grade===g?'selected':''}>${g}</option>`).join('')}</select><input type="text" onchange="window.app.updateMember(${i}, 'name', this.value)" value="${m.name}" class="bg-transparent text-white text-sm p-1 border-b border-transparent focus:border-[#66fcf1] outline-none flex-1 w-full uppercase"><select onchange="window.app.updateMember(${i}, 'role', this.value)" class="bg-black text-slate-300 text-[10px] p-1 border border-slate-700 outline-none w-28 uppercase">${ROLES.map(r=>`<option value="${r}" ${m.role===r?'selected':''}>${r}</option>`).join('')}</select><button onclick="window.app.removeMember(${i})" class="text-red-900 group-hover:text-red-500 p-2 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>`).join('')}</div></div>`;
                 } else if(state.slTab === 'RAPPORT') {
-                    container.innerHTML = `<div class="flex flex-col h-full"><div class="flex-1 overflow-y-auto mb-4 bg-black/20 border border-white/5 p-4"><div class="space-y-4 border-l border-slate-700 pl-4 ml-2">${(squad.missionHistory||[]).map(e=>`<div class="relative"><div class="absolute -left-[21px] top-1.5 w-2 h-2 rounded-full bg-slate-700 border border-black"></div><div class="text-[10px] text-slate-500 font-mono mb-0.5">${new Date(e.time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div><div class="text-sm text-white font-bold uppercase tracking-wide">${e.content}</div></div>`).join('')}</div></div><div class="mt-auto pt-4 border-t border-white/10"><div class="flex gap-4 mb-4 justify-center"><label class="flex items-center gap-2 cursor-pointer p-4 border border-white/10 bg-black/40 hover:bg-white/5 transition-colors w-1/2 justify-center"><input type="radio" name="mission-status" value="SUCCESS" checked class="accent-emerald-500 w-6 h-6"><span class="text-emerald-500 font-black uppercase text-lg">SUCCÈS</span></label><label class="flex items-center gap-2 cursor-pointer p-4 border border-white/10 bg-black/40 hover:bg-white/5 transition-colors w-1/2 justify-center"><input type="radio" name="mission-status" value="FAILURE" class="accent-red-500 w-6 h-6"><span class="text-red-500 font-black uppercase text-lg">ÉCHEC</span></label></div><textarea id="final-report-input" class="w-full bg-black border border-slate-700 p-4 text-white text-sm mb-4 h-32 resize-none outline-none focus:border-red-500 uppercase font-mono touch-input" placeholder="NOTE DE FIN DE MISSION..."></textarea><button onclick="window.app.sendEndMission()" class="w-full bg-red-900/80 hover:bg-red-800 text-white py-6 font-bold uppercase tracking-[0.2em] flex items-center justify-center gap-2 border border-red-700 text-xl"><i data-lucide="save"></i> CLÔTURER</button></div></div>`;
+                    // GENERATION AUTOMATIQUE DU RAPPORT
+                    const generatedReport = this.generateMilitaryReport(squad, "");
+                    
+                    container.innerHTML = `<div class="flex flex-col h-full"><div class="flex-1 overflow-y-auto mb-4 bg-black/20 border border-white/5 p-4"><div class="space-y-4 border-l border-slate-700 pl-4 ml-2">${(squad.missionHistory||[]).map(e=>`<div class="relative"><div class="absolute -left-[21px] top-1.5 w-2 h-2 rounded-full bg-slate-700 border border-black"></div><div class="text-[10px] text-slate-500 font-mono mb-0.5">${new Date(e.time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div><div class="text-sm text-white font-bold uppercase tracking-wide">${e.content}</div></div>`).join('')}</div></div><div class="mt-auto pt-4 border-t border-white/10"><div class="flex gap-4 mb-4 justify-center"><label class="flex items-center gap-2 cursor-pointer p-4 border border-white/10 bg-black/40 hover:bg-white/5 transition-colors w-1/2 justify-center"><input type="radio" name="mission-status" value="SUCCESS" checked class="accent-emerald-500 w-6 h-6"><span class="text-emerald-500 font-black uppercase text-lg">SUCCÈS</span></label><label class="flex items-center gap-2 cursor-pointer p-4 border border-white/10 bg-black/40 hover:bg-white/5 transition-colors w-1/2 justify-center"><input type="radio" name="mission-status" value="FAILURE" class="accent-red-500 w-6 h-6"><span class="text-red-500 font-black uppercase text-lg">ÉCHEC</span></label></div>
+                    
+                    <!-- ZONE DE TEXTE PRE-REMPLIE -->
+                    <textarea id="final-report-input" class="w-full bg-black border border-slate-700 p-4 text-white text-xs mb-4 h-64 resize-none outline-none focus:border-red-500 uppercase font-mono touch-input leading-relaxed tracking-wide">${generatedReport}</textarea>
+                    
+                    <button onclick="window.app.sendEndMission()" class="w-full bg-red-900/80 hover:bg-red-800 text-white py-6 font-bold uppercase tracking-[0.2em] flex items-center justify-center gap-2 border border-red-700 text-xl"><i data-lucide="save"></i> CLÔTURER</button></div></div>`;
                 } else if (state.slTab === 'LIAISON') {
                     container.innerHTML = `
                         <div class="space-y-4">
