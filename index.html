@@ -194,6 +194,25 @@
                 </div>
             </main>
         </div>
+
+        <!-- Modal Détail Rapport -->
+        <div id="report-modal" class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+            <div class="military-box p-6 max-w-lg w-full border-white/20 flex flex-col max-h-[90vh]">
+                <div class="corner-tl"></div><div class="corner-tr"></div><div class="corner-bl"></div><div class="corner-br"></div>
+                <div class="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
+                    <h3 class="text-xl font-black text-white uppercase tracking-widest flex items-center gap-2">
+                        <i data-lucide="file-text" class="text-[#66fcf1]"></i> RAPPORT DE MISSION
+                    </h3>
+                    <button onclick="window.app.closeReportModal()"><i data-lucide="x" class="w-6 h-6 text-slate-500 hover:text-white"></i></button>
+                </div>
+                <div class="flex-1 overflow-y-auto mb-4 pr-2">
+                    <div id="report-modal-content" class="text-sm font-mono text-slate-300 whitespace-pre-wrap"></div>
+                </div>
+                <button onclick="window.app.copyReport()" class="w-full bg-white/10 hover:bg-white/20 text-white font-bold py-3 border border-white/30 flex items-center justify-center gap-2 uppercase tracking-widest transition">
+                    <i data-lucide="copy" class="w-4 h-4"></i> Copier le rapport
+                </button>
+            </div>
+        </div>
     </template>
 
     <!-- 3. INTERFACE SQUAD LEADER (SL) -->
@@ -310,7 +329,8 @@
             slTab: 'TACTIQUE', // TACTIQUE, ESCOUADE, RAPPORT, LIAISON
             activeSitrepForm: null,
             sitrepData: {},
-            selectedSquadId: null // Pour le modal login
+            selectedSquadId: null, // Pour le modal login
+            activeReportId: null // Pour modal rapport
         };
 
         // --- APP LOGIC ---
@@ -510,13 +530,14 @@
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), updates, { merge: true });
             },
 
-            endMission: async function(squadId, report = "R.A.S") {
+            endMission: async function(squadId, report = "R.A.S", outcome = "UNKNOWN") {
                 const sData = state.squads[squadId];
                 // Log
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'mission_logs'), {
                     sl: sData.sl, squad: sData.name, objective: sData.objective,
                     startTime: sData.startTime, endTime: new Date().toISOString(),
-                    report: report, timestamp: serverTimestamp(), managedBy: state.pseudo
+                    report: report, timestamp: serverTimestamp(), managedBy: state.pseudo,
+                    outcome: outcome // Success/Failure
                 });
                 // Reset
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), {
@@ -611,6 +632,66 @@
                 const squadId = Object.keys(state.squads).find(k => state.squads[k].sl === state.pseudo);
                 const members = state.squads[squadId].members.filter((_, i) => i !== idx);
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), { members, effectif: members.length });
+            },
+
+            sitrepAction: function(id, form, label) {
+                const squadId = Object.keys(state.squads).find(k => state.squads[k].sl === state.pseudo);
+                if (id === 'rtb') {
+                    if(confirm("Demander RTB à l'EM ?")) this.requestRTB(squadId);
+                } else {
+                    this.openSitrepModal(form, label);
+                }
+            },
+
+            sendEndMission: function() {
+                const squadId = Object.keys(state.squads).find(k => state.squads[k].sl === state.pseudo);
+                const note = document.getElementById('final-report-input').value;
+                const status = document.querySelector('input[name="mission-status"]:checked')?.value || 'UNKNOWN';
+                if(confirm("Clôturer la mission ?")) this.endMission(squadId, note, status);
+            },
+
+            // --- REPORT MODAL ACTIONS (STAFF) ---
+            openReportModal: function(logId) {
+                state.activeReportId = logId;
+                const log = state.logs.find(l => l.id === logId);
+                if(!log) return;
+
+                const modal = document.getElementById('report-modal');
+                const content = document.getElementById('report-modal-content');
+                
+                modal.classList.remove('hidden');
+                content.innerHTML = `
+                    <div class="mb-4 border-b border-white/10 pb-2">
+                        <div class="text-xs text-slate-500 uppercase">MISSION</div>
+                        <div class="text-lg font-bold text-white uppercase">${log.objective}</div>
+                        <div class="text-xs text-slate-500 uppercase mt-1">SQUAD LEADER</div>
+                        <div class="text-md font-bold text-[#66fcf1] uppercase">${log.sl} (${log.squad})</div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="text-xs text-slate-500 uppercase mb-1">RESULTAT</div>
+                        <div class="text-md font-bold uppercase ${log.outcome === 'SUCCESS' ? 'text-emerald-500' : (log.outcome === 'FAILURE' ? 'text-red-500' : 'text-slate-400')}">${log.outcome === 'SUCCESS' ? 'SUCCÈS' : (log.outcome === 'FAILURE' ? 'ÉCHEC' : 'INCONNU')}</div>
+                    </div>
+                    <div class="bg-black/50 p-3 border border-white/10">
+                        <div class="text-xs text-slate-500 uppercase mb-2">RAPPORT</div>
+                        <div class="whitespace-pre-wrap text-sm">${log.report}</div>
+                    </div>
+                    <div class="text-xs text-slate-600 mt-4 text-right font-mono">
+                        ${log.timestamp ? new Date(log.timestamp.seconds * 1000).toLocaleString() : ''}
+                    </div>
+                `;
+                lucide.createIcons();
+            },
+
+            closeReportModal: function() {
+                document.getElementById('report-modal').classList.add('hidden');
+                state.activeReportId = null;
+            },
+
+            copyReport: function() {
+                const log = state.logs.find(l => l.id === state.activeReportId);
+                if(!log) return;
+                const text = `RAPPORT MISSION ${log.objective}\nSL: ${log.sl} (${log.squad})\nRESULTAT: ${log.outcome}\nDATE: ${new Date(log.timestamp.seconds*1000).toLocaleString()}\n\nCONTENU:\n${log.report}`;
+                navigator.clipboard.writeText(text).then(() => alert("Rapport copié !"));
             },
 
             // --- RENDER ENGINE ---
@@ -771,15 +852,32 @@
                 `).join('');
 
                 // Render Logs
-                document.getElementById('logs-container').innerHTML = state.logs.map(l => `
-                    <div class="bg-white/5 p-2 border-l-2 border-slate-500">
-                        <div class="flex justify-between mb-1">
-                            <span class="font-bold text-mil-cyan text-[10px] uppercase">${l.sl}</span>
+                document.getElementById('logs-container').innerHTML = state.logs.map(l => {
+                    // Determine Icon & Color
+                    let icon = '<i data-lucide="help-circle" class="text-slate-500 w-4 h-4"></i>';
+                    let color = 'border-slate-500';
+                    
+                    if (l.outcome === 'SUCCESS') {
+                        icon = '<i data-lucide="check-circle" class="text-emerald-500 w-4 h-4"></i>';
+                        color = 'border-emerald-500';
+                    } else if (l.outcome === 'FAILURE') {
+                        icon = '<i data-lucide="x-circle" class="text-red-500 w-4 h-4"></i>';
+                        color = 'border-red-500';
+                    }
+
+                    return `
+                    <div onclick="window.app.openReportModal('${l.id}')" class="bg-white/5 p-2 border-l-2 ${color} cursor-pointer hover:bg-white/10 transition-colors">
+                        <div class="flex justify-between mb-1 items-center">
+                            <div class="flex items-center gap-2">
+                                ${icon}
+                                <span class="font-bold text-[#66fcf1] text-[10px] uppercase">${l.sl}</span>
+                                <span class="text-[9px] text-slate-400 uppercase">(${l.squad})</span>
+                            </div>
                             <span class="text-[9px] text-slate-500 font-mono">${l.timestamp ? new Date(l.timestamp.seconds * 1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : ''}</span>
                         </div>
-                        <div class="text-[10px] text-slate-300 uppercase">${l.report}</div>
+                        <div class="text-[10px] text-slate-300 uppercase truncate">${l.report}</div>
                     </div>
-                `).join('');
+                `}).join('');
             },
 
             renderSL: function() {
@@ -940,6 +1038,16 @@
                                 </div>
                             </div>
                             <div class="mt-auto pt-4 border-t border-white/10">
+                                <div class="flex gap-4 mb-4 justify-center">
+                                    <label class="flex items-center gap-2 cursor-pointer p-2 border border-white/10 bg-black/40 rounded hover:bg-white/5 transition-colors">
+                                        <input type="radio" name="mission-status" value="SUCCESS" checked class="accent-emerald-500 w-4 h-4">
+                                        <span class="text-emerald-500 font-black uppercase text-sm">SUCCÈS</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer p-2 border border-white/10 bg-black/40 rounded hover:bg-white/5 transition-colors">
+                                        <input type="radio" name="mission-status" value="FAILURE" class="accent-red-500 w-4 h-4">
+                                        <span class="text-red-500 font-black uppercase text-sm">ÉCHEC</span>
+                                    </label>
+                                </div>
                                 <textarea id="final-report-input" class="w-full bg-black border border-slate-700 p-3 text-white text-sm mb-4 h-24 resize-none outline-none focus:border-red-500 uppercase font-mono" placeholder="NOTE DE FIN DE MISSION..."></textarea>
                                 <button onclick="window.app.sendEndMission()" class="w-full bg-red-900/80 hover:bg-red-800 text-white py-4 font-bold uppercase tracking-[0.2em] flex items-center justify-center gap-2 border border-red-700"><i data-lucide="save"></i> Signer & Clôturer</button>
                             </div>
@@ -999,7 +1107,52 @@
             sendEndMission: function() {
                 const squadId = Object.keys(state.squads).find(k => state.squads[k].sl === state.pseudo);
                 const note = document.getElementById('final-report-input').value;
-                if(confirm("Clôturer la mission ?")) this.endMission(squadId, note);
+                const status = document.querySelector('input[name="mission-status"]:checked').value;
+                if(confirm("Clôturer la mission ?")) this.endMission(squadId, note, status);
+            },
+
+            // --- REPORT MODAL ACTIONS (STAFF) ---
+            openReportModal: function(logId) {
+                state.activeReportId = logId;
+                const log = state.logs.find(l => l.id === logId);
+                if(!log) return;
+
+                const modal = document.getElementById('report-modal');
+                const content = document.getElementById('report-modal-content');
+                
+                modal.classList.remove('hidden');
+                content.innerHTML = `
+                    <div class="mb-4 border-b border-white/10 pb-2">
+                        <div class="text-xs text-slate-500 uppercase">MISSION</div>
+                        <div class="text-lg font-bold text-white uppercase">${log.objective}</div>
+                        <div class="text-xs text-slate-500 uppercase mt-1">SQUAD LEADER</div>
+                        <div class="text-md font-bold text-[#66fcf1] uppercase">${log.sl} (${log.squad})</div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="text-xs text-slate-500 uppercase mb-1">RESULTAT</div>
+                        <div class="text-md font-bold uppercase ${log.outcome === 'SUCCESS' ? 'text-emerald-500' : (log.outcome === 'FAILURE' ? 'text-red-500' : 'text-slate-400')}">${log.outcome === 'SUCCESS' ? 'SUCCÈS' : (log.outcome === 'FAILURE' ? 'ÉCHEC' : 'INCONNU')}</div>
+                    </div>
+                    <div class="bg-black/50 p-3 border border-white/10">
+                        <div class="text-xs text-slate-500 uppercase mb-2">RAPPORT</div>
+                        <div class="whitespace-pre-wrap text-sm">${log.report}</div>
+                    </div>
+                    <div class="text-xs text-slate-600 mt-4 text-right font-mono">
+                        ${log.timestamp ? new Date(log.timestamp.seconds * 1000).toLocaleString() : ''}
+                    </div>
+                `;
+                lucide.createIcons();
+            },
+
+            closeReportModal: function() {
+                document.getElementById('report-modal').classList.add('hidden');
+                state.activeReportId = null;
+            },
+
+            copyReport: function() {
+                const log = state.logs.find(l => l.id === state.activeReportId);
+                if(!log) return;
+                const text = `RAPPORT MISSION ${log.objective}\nSL: ${log.sl} (${log.squad})\nRESULTAT: ${log.outcome}\nDATE: ${new Date(log.timestamp.seconds*1000).toLocaleString()}\n\nCONTENU:\n${log.report}`;
+                navigator.clipboard.writeText(text).then(() => alert("Rapport copié !"));
             }
         };
 
