@@ -53,6 +53,12 @@
             linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
             background-size: 40px 40px;
         }
+
+        /* Custom Input for touch */
+        .touch-input {
+            height: 50px;
+            font-size: 16px;
+        }
     </style>
     <script>
         tailwind.config = {
@@ -97,7 +103,7 @@
                     <span class="text-red-700">FOF</span>NET
                 </h1>
                 <div class="flex justify-center gap-4 text-[10px] uppercase tracking-[0.3em] text-slate-500">
-                    <span>Secure V.3.2</span><span>•</span><span>Ops Center</span><span>•</span><span class="text-emerald-500 animate-pulse">Online</span>
+                    <span>Secure V.3.5</span><span>•</span><span>Ops Center</span><span>•</span><span class="text-emerald-500 animate-pulse">Online</span>
                 </div>
             </div>
 
@@ -136,37 +142,39 @@
     <template id="tpl-staff">
         <div class="flex flex-col h-full bg-[#0b0c10]">
             <!-- Header -->
-            <header class="bg-[#1f2833] border-b border-[#45a29e]/30 p-2 flex justify-between items-center shadow-lg z-20 shrink-0">
-                <div class="flex items-center gap-4">
-                    <div class="flex items-center gap-2 px-4 border-r border-slate-600">
-                        <i data-lucide="shield" class="text-red-600 w-6 h-6"></i>
-                        <span class="font-bold text-white tracking-widest uppercase hidden md:inline">QG TACTIQUE</span>
+            <header class="bg-[#1f2833] border-b border-[#45a29e]/30 p-2 flex flex-col shadow-lg z-20 shrink-0">
+                <div class="flex justify-between items-center mb-2">
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-2 px-4 border-r border-slate-600">
+                            <i data-lucide="shield" class="text-red-600 w-6 h-6"></i>
+                            <span class="font-bold text-white tracking-widest uppercase hidden md:inline">QG TACTIQUE</span>
+                        </div>
+                        
+                        <!-- Settings EM -->
+                        <div class="flex gap-2 md:gap-4 items-center">
+                            <div class="flex flex-col">
+                                <label class="text-[9px] text-[#66fcf1] uppercase">Base</label>
+                                <select id="em-base-select" onchange="window.app.updateSettings('base', this.value)" class="bg-[#0b0c10] text-white border border-slate-600 text-xs py-1 px-2 uppercase outline-none focus:border-[#66fcf1]">
+                                    <!-- Options Bases -->
+                                </select>
+                            </div>
+                            <div class="flex flex-col w-24 md:w-32">
+                                <label class="text-[9px] text-slate-400 uppercase">Adjoint</label>
+                                <input type="text" onchange="window.app.updateSettings('adjoint', this.value)" id="em-adjoint-input" class="bg-[#0b0c10] text-white border border-slate-600 text-xs py-1 px-2 uppercase outline-none" list="sl-suggestions">
+                            </div>
+                        </div>
                     </div>
-                    
-                    <!-- Settings EM -->
-                    <div class="flex gap-2 md:gap-4 items-center">
-                        <div class="flex flex-col">
-                            <label class="text-[9px] text-[#66fcf1] uppercase">Base</label>
-                            <select id="em-base-select" onchange="window.app.updateSettings('base', this.value)" class="bg-[#0b0c10] text-white border border-slate-600 text-xs py-1 px-2 uppercase outline-none focus:border-[#66fcf1]">
-                                <!-- Options Bases -->
-                            </select>
-                        </div>
-                        <div class="flex flex-col w-24 md:w-32">
-                            <label class="text-[9px] text-slate-400 uppercase">Adjoint</label>
-                            <input type="text" onchange="window.app.updateSettings('adjoint', this.value)" id="em-adjoint-input" class="bg-[#0b0c10] text-white border border-slate-600 text-xs py-1 px-2 uppercase outline-none" list="sl-suggestions">
-                        </div>
-                        <div class="flex flex-col w-24 md:w-32 hidden md:flex">
-                            <label class="text-[9px] text-slate-400 uppercase">Stagiaire</label>
-                            <input type="text" onchange="window.app.updateSettings('stagiaire', this.value)" id="em-stagiaire-input" class="bg-[#0b0c10] text-white border border-slate-600 text-xs py-1 px-2 uppercase outline-none" list="sl-suggestions">
-                        </div>
+                    <div class="flex items-center gap-4">
+                        <button onclick="window.app.addCDS()" class="bg-[#66fcf1]/10 text-[#66fcf1] px-3 py-1 text-xs font-bold border border-[#66fcf1]/50 hover:bg-[#66fcf1]/20 transition flex items-center gap-1">
+                            <i data-lucide="plus"></i> CDS
+                        </button>
+                        <button onclick="window.app.logout()" class="bg-red-900/20 text-red-200 p-2 border border-red-900/50 hover:bg-red-900/50 transition"><i data-lucide="log-out" class="w-5 h-5"></i></button>
                     </div>
                 </div>
-                <div class="flex items-center gap-4">
-                    <div class="text-right hidden sm:block">
-                        <div class="text-[9px] text-slate-500 uppercase font-bold">Effectifs</div>
-                        <div id="total-effectif" class="text-xl font-bold text-[#66fcf1] leading-none">0</div>
-                    </div>
-                    <button onclick="window.app.logout()" class="bg-red-900/20 text-red-200 p-2 border border-red-900/50 hover:bg-red-900/50 transition"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+
+                <!-- ZONE CHEFS DE SECTION (CDS) -->
+                <div id="cds-container" class="flex flex-wrap gap-2 w-full px-2 pb-2 empty:hidden border-t border-white/5 pt-2">
+                    <!-- Injecté via JS -->
                 </div>
             </header>
 
@@ -259,14 +267,14 @@
 
         <!-- Modal SITREP Form -->
         <div id="sitrep-modal" class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-            <div class="military-box w-full max-w-sm p-6 border-white/30">
+            <div class="military-box w-full max-w-md p-6 border-white/30 bg-[#0f1419] shadow-2xl">
                 <div class="corner-tl"></div><div class="corner-tr"></div><div class="corner-bl"></div><div class="corner-br"></div>
                 <div class="flex justify-between items-center mb-6 border-b border-white/10 pb-2">
                     <h3 class="text-xl font-black text-white uppercase tracking-widest" id="sitrep-title">RAPPORT</h3>
-                    <button onclick="window.app.closeSitrepModal()"><i data-lucide="x" class="w-6 h-6 text-slate-500 hover:text-white"></i></button>
+                    <button onclick="window.app.closeSitrepModal()"><i data-lucide="x" class="w-8 h-8 text-slate-500 hover:text-white"></i></button>
                 </div>
-                <div id="sitrep-form-content" class="space-y-4"></div>
-                <button onclick="window.app.submitSitrep()" class="w-full bg-white text-black font-black uppercase py-4 hover:bg-slate-200 transition-colors tracking-widest mt-4">TRANSMETTRE</button>
+                <div id="sitrep-form-content" class="space-y-6"></div>
+                <button onclick="window.app.submitSitrep()" class="w-full bg-white text-black font-black uppercase py-4 hover:bg-slate-200 transition-colors tracking-widest mt-6 text-lg">TRANSMETTRE</button>
             </div>
         </div>
     </template>
@@ -279,7 +287,6 @@
 
         // --- CONSTANTES ---
         const STAFF_LIST = ["MJR.Lazarevic", "WhiZzper", "Papa Yankee", "Le_S", "teckilgfx", "Eksypa", "GlockTrooper77", "Pitivier le vrai"];
-        const BASES = ["USS FREEDOM (Porte-Avions)", "FOB OMEGA", "BASE AÉRIENNE 104", "CAMP DE L'EST", "POSITION AVANCÉE", "QG MOBILE", "DESTROYER"];
         const OBJECTIVES = ["ALABAMA", "ALASKA", "ARIZONA", "ARKANSAS", "APOLLO", "AMBER", "AUGUSTA", "ATLAS", "AUSTIN", "BALTIMORE", "BROOKLYN", "CALIFORNIA", "CHICAGO", "COLORADO", "CONCORDE", "CONNECTICUT", "DALLAS", "DAYTON", "DELAWARE", "DENVER", "FLORIDA", "FRESNO", "GEORGIA", "HAWAI", "HOUSTON", "IDAHO", "ILLINOIS", "INDIANA", "IOWA", "JUNKYARD", "KANSAS", "KENTUCKY", "LAS VEGAS", "LIBERTY", "LOGISTIQUE", "LOS ANGELES", "LOUISIANA", "MAINE", "MARYLAND", "MASSACHUSETTS", "MIAMI", "MICHIGAN", "MINNESOTA", "MISSISSIPPI", "MISSOURI", "MONTANA", "MONROE", "NASHVILLE", "NEBRASKA", "NEVADA", "NEW HAMPSHIRE", "NEW JERSEY", "NEW MEXICO", "NEW ORLEANS", "NEW YORK", "NORTH CAROLINA", "NORTH DAKOTA", "OHIO", "OKLAHOMA", "OMAHA", "OREGON", "PENNSYLVANIA", "PHILADELPHIA", "PHOENIX", "PORTLAND", "PRINCETON", "PROVIDENCE", "REDHAWK", "RELAI DE L'EST", "RELAI ST PHILIPPE", "RICHEMOND", "RHODE ISLAND", "SAN ANTONIO", "SAN DIEGO", "SAN JOSE", "SEATTLE", "SOUTH CAROLINA", "SOUTH DAKOTA", "SPIRIT", "TAMPA", "TENNESSEE", "TEXAS", "TITAN", "TOUR D'ENTRE-DEUX", "TOUR DE REGINA", "TOUR DES PINS", "TOUR ESTRAPADE", "TUCSON", "TULSA", "UTAH", "VERMONT", "VESPER", "VIRGINIA", "WASHINGTON", "WEST VIRGINIA", "WISCONSIN", "WYOMING", "DEFENSE DE BASE", "SECURITE EM", "RECONNAISSANCE", "DEMINAGE"];
         const SQUADS_CONFIG = [
             { id: 'alpha', name: 'Alpha', freq: '32.0', color: 'bg-emerald-800', border: 'border-emerald-600', text: 'text-emerald-500' },
@@ -297,11 +304,10 @@
         const GRADES = ["Recrue", "Sdt", "1.Cl", "Cpl", "Cch", "Sgt", "Sgt-C", "Adj", "Adj-C", "Maj", "Aspi", "S-Lt", "Lt", "Cne"];
         const ROLES = ["Fusilier", "Médic", "AT", "MG", "Radio", "Sapeur", "Sniper", "Pilote", "Chef de Groupe"];
         
-        // Liste de suggestion SL (modifiable)
+        // Liste de suggestion SL
         const BASE_SL_SUGGESTIONS = ["Nico75", "-Sangui-", "[VDK]KEBABIERdu96", "ALEX2801CH", "ATOMIC W4RRIOR", "Benjamin", "Can am", "CCH.Le_S", "Darkspartan9337", "EagleClaw", "Fez", "Five Scream", "Flo.", "Gin", "Hybris95", "Jej", "KenBlook5129", "l Ryüjinn l", "Lapuchk6766", "LittleEvil", "lkurd26", "MASKER84", "Mirai", "MULTIFRUIT1492", "Natrium", "Nettoyeur", "oahhmz", "Panchito6097", "Pixc361", "Pokeur", "Poulet998", "Sucreblé", "Tatar", "Teckil", "TF3 SLAYER", "Théotime", "Tinky Winky", "Tong", "valoche_0", "ValouTekmi", "Waze toxic", "Exam94", "xYourGalactic-I", "Yogun", "Zl Deathstro", "zlatanqlf"];
 
         // --- FIREBASE INIT ---
-        // Utilisation des variables globales si présentes, sinon config projet
         const firebaseConfig = (typeof __firebase_config !== 'undefined') ? JSON.parse(__firebase_config) : {
             apiKey: "AIzaSyD3caoQgjcnsyyh-fCSFHwbErPpPvip8p4",
             authDomain: "squadnet-ops.firebaseapp.com",
@@ -317,7 +323,7 @@
         const db = getFirestore(app);
         const appId = (typeof __app_id !== 'undefined') ? __app_id : 'squadnet-ops';
 
-        // --- STATE MANAGEMENT SIMPLE ---
+        // --- STATE MANAGEMENT ---
         const state = {
             user: null,
             role: null, // 'STAFF' ou 'SL'
@@ -326,11 +332,11 @@
             squads: {},
             opSettings: {},
             logs: [],
-            slTab: 'TACTIQUE', // TACTIQUE, ESCOUADE, RAPPORT, LIAISON
+            slTab: 'TACTIQUE',
             activeSitrepForm: null,
             sitrepData: {},
-            selectedSquadId: null, // Pour le modal login
-            activeReportId: null // Pour modal rapport
+            selectedSquadId: null,
+            activeReportId: null
         };
 
         // --- APP LOGIC ---
@@ -338,11 +344,10 @@
             init: function() {
                 this.bindEvents();
                 this.initAuth();
-                this.render(); // Initial render
+                this.render();
             },
 
             bindEvents: function() {
-                // Expose methods globally for HTML onclicks
                 window.app = this;
             },
 
@@ -351,16 +356,13 @@
                     state.user = u;
                     if (u) {
                         this.startListeners();
-                        // Auto-reconnect logic
                         if (state.pseudo && state.view === 'LANDING') {
-                            // On attend que les squads soient chargés par le listener
                             setTimeout(() => this.checkAutoLogin(), 1000); 
                         }
                     }
                     this.render();
                 });
 
-                // Sign In
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     try { await signInWithCustomToken(auth, __initial_auth_token); } 
                     catch (e) { await signInAnonymously(auth); }
@@ -370,20 +372,17 @@
             },
 
             startListeners: function() {
-                // Squads
                 onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'squads'), (snapshot) => {
                     const data = {};
                     snapshot.docs.forEach(doc => data[doc.id] = doc.data());
                     state.squads = data;
-                    this.checkAutoLogin(); // Check again on data update
+                    this.checkAutoLogin();
                     this.render();
                 });
-                // Settings path fixed
                 onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'config', 'ops'), (d) => {
                     state.opSettings = d.data() || {};
                     this.render();
                 });
-                // Logs
                 const qLogs = query(collection(db, 'artifacts', appId, 'public', 'data', 'mission_logs'), orderBy('timestamp', 'desc'));
                 onSnapshot(qLogs, (snapshot) => {
                     state.logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -393,24 +392,18 @@
 
             checkAutoLogin: function() {
                 if (state.view !== 'LANDING' || !state.pseudo) return;
-                // Si le joueur est un SL actif dans une escouade
                 const myActiveSquad = Object.entries(state.squads).find(([id, s]) => s.sl === state.pseudo && s.status === 'ACTIVE');
                 if (myActiveSquad) {
                     state.role = 'SL';
                     state.view = 'SL';
                     this.render();
-                } else if (STAFF_LIST.includes(state.pseudo)) {
-                    // Optional auto-login staff
                 }
             },
 
-            // --- NAVIGATION & LOGIN ---
+            // --- ACTIONS ---
             
             openLoginModal: function(type) {
-                const modal = document.getElementById('login-modal');
-                const content = document.getElementById('modal-content');
-                modal.classList.remove('hidden');
-                
+                document.getElementById('login-modal').classList.remove('hidden');
                 let html = '';
                 if (type === 'STAFF') {
                     html = `
@@ -422,29 +415,16 @@
                     const squad = SQUADS_CONFIG.find(s => s.id === state.selectedSquadId);
                     const sData = state.squads[state.selectedSquadId];
                     const isAssigned = sData.status === 'ASSIGNED';
-                    
                     html = `
                         <div class="mb-6"><i data-lucide="target" class="w-16 h-16 text-emerald-600 mx-auto"></i><h2 class="text-xl font-bold text-white uppercase">ID SQUAD LEADER</h2><div class="text-emerald-500 font-bold">${squad.name}</div></div>
                     `;
-
                     if (isAssigned) {
-                        html += `
-                            <p class="text-slate-500 text-xs uppercase mb-2">Opérateur Assigné</p>
-                            <div class="text-2xl font-bold text-white bg-white/5 p-4 border border-white/10 mb-6">${sData.sl}</div>
-                            <button onclick="window.app.login('SL_CONFIRM')" class="w-full bg-emerald-900/80 hover:bg-emerald-800 text-white font-bold py-3 border border-emerald-700">CONFIRMER IDENTITÉ</button>
-                        `;
+                        html += `<p class="text-slate-500 text-xs uppercase mb-2">Opérateur Assigné</p><div class="text-2xl font-bold text-white bg-white/5 p-4 border border-white/10 mb-6">${sData.sl}</div><button onclick="window.app.login('SL_CONFIRM')" class="w-full bg-emerald-900/80 hover:bg-emerald-800 text-white font-bold py-3 border border-emerald-700">CONFIRMER IDENTITÉ</button>`;
                     } else {
-                        html += `
-                            <div class="relative mb-4">
-                                <input list="sl-suggestions-list" type="text" id="login-pseudo" class="w-full bg-black border border-slate-700 p-4 text-white text-center outline-none uppercase" placeholder="VOTRE GAMERTAG" value="${state.pseudo}">
-                                <datalist id="sl-suggestions-list">${BASE_SL_SUGGESTIONS.map(s => `<option value="${s}">`).join('')}</datalist>
-                            </div>
-                            <div id="new-profile-alert" class="text-xs text-yellow-500 mb-4 hidden">Nouveau profil détecté</div>
-                            <button onclick="window.app.login('SL_MANUAL')" class="w-full bg-blue-900/80 hover:bg-blue-800 text-white font-bold py-3 border border-blue-700">VALIDER</button>
-                        `;
+                        html += `<div class="relative mb-4"><input list="sl-suggestions-list" type="text" id="login-pseudo" class="w-full bg-black border border-slate-700 p-4 text-white text-center outline-none uppercase" placeholder="VOTRE GAMERTAG" value="${state.pseudo}"><datalist id="sl-suggestions-list">${BASE_SL_SUGGESTIONS.map(s => `<option value="${s}">`).join('')}</datalist></div><button onclick="window.app.login('SL_MANUAL')" class="w-full bg-blue-900/80 hover:bg-blue-800 text-white font-bold py-3 border border-blue-700">VALIDER</button>`;
                     }
                 }
-                content.innerHTML = html;
+                document.getElementById('modal-content').innerHTML = html;
                 lucide.createIcons();
             },
 
@@ -461,7 +441,6 @@
             login: async function(mode) {
                 const pseudoInput = document.getElementById('login-pseudo');
                 const pseudo = pseudoInput ? pseudoInput.value.trim() : state.squads[state.selectedSquadId]?.sl;
-                
                 if (!pseudo) return alert("Identifiant requis");
 
                 if (mode === 'STAFF') {
@@ -469,24 +448,15 @@
                     state.role = 'STAFF';
                     state.view = 'STAFF';
                 } else {
-                    // SL Login
                     const squadId = state.selectedSquadId;
                     const squadData = state.squads[squadId];
-                    
                     await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), {
-                        ...squadData,
-                        sl: pseudo,
-                        name: SQUADS_CONFIG.find(s => s.id === squadId).name,
-                        startTime: new Date().toISOString(),
-                        status: 'ACTIVE',
-                        members: squadData.members || [],
-                        missionHistory: []
+                        ...squadData, sl: pseudo, name: SQUADS_CONFIG.find(s => s.id === squadId).name,
+                        startTime: new Date().toISOString(), status: 'ACTIVE', members: squadData.members || [], missionHistory: []
                     }, { merge: true });
-
                     state.role = 'SL';
                     state.view = 'SL';
                 }
-
                 state.pseudo = pseudo;
                 localStorage.setItem('fof_ops_pseudo', pseudo);
                 this.closeModal();
@@ -502,58 +472,59 @@
                 this.render();
             },
 
-            // --- UPDATES & ACTIONS ---
-
+            // --- EM LOGIC ---
             updateSettings: async function(key, val) {
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'config', 'ops'), {
-                    ...state.opSettings, [key]: val
-                }, { merge: true });
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'config', 'ops'), { ...state.opSettings, [key]: val }, { merge: true });
+            },
+
+            addCDS: async function() {
+                const count = (state.opSettings.active_cds_count || 0) + 1;
+                await this.updateSettings('active_cds_count', count);
+            },
+
+            toggleCDS: async function(squadId, cdsIndex) {
+                const squad = state.squads[squadId];
+                const currentCds = `CDS ${cdsIndex}`;
+                // Si déjà assigné à ce CDS, on retire. Si libre ou assigné à un autre, on écrase (ou on bloque si on veut)
+                const newCds = (squad.cds_owner === currentCds) ? null : currentCds;
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), { cds_owner: newCds }, { merge: true });
             },
 
             updateSquad: async function(squadId, field, val) {
-                // SAFE CHECK: Check if squad data exists before accessing properties
                 const currentSquad = state.squads[squadId] || {};
                 const updates = { [field]: val };
-                // Logic reset
                 if (field === 'sl') {
                     if (val === "") {
-                        updates.status = 'DISPO';
-                        updates.startTime = null;
-                        updates.sitrep = '';
-                        updates.rtbStatus = 'NONE';
-                        updates.junctionFreq = '';
+                        updates.status = 'DISPO'; updates.startTime = null; updates.sitrep = ''; updates.rtbStatus = 'NONE'; updates.junctionFreq = ''; updates.members = []; updates.effectif = 0;
                     } else if (currentSquad.status !== 'ACTIVE') {
-                        updates.status = 'ASSIGNED';
-                        updates.startTime = null;
+                        updates.status = 'ASSIGNED'; updates.startTime = null;
                     }
                 }
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), updates, { merge: true });
             },
 
-            endMission: async function(squadId, report = "R.A.S", outcome = "UNKNOWN") {
+            endMission: async function(squadId, note, outcome = "UNKNOWN") {
                 const sData = state.squads[squadId];
-                // Log
+                const historySummary = (sData.missionHistory || []).map(e => `[${new Date(e.time).toLocaleTimeString()}] ${e.content}`).join('\n');
+                const reportFull = `RAPPORT DE MISSION\n------------------\nNOTE SL: ${note}\n\nJOURNAL DE MARCHE:\n${historySummary}`;
+
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'mission_logs'), {
                     sl: sData.sl, squad: sData.name, objective: sData.objective,
                     startTime: sData.startTime, endTime: new Date().toISOString(),
-                    report: report, timestamp: serverTimestamp(), managedBy: state.pseudo,
-                    outcome: outcome // Success/Failure
+                    report: reportFull, timestamp: serverTimestamp(), managedBy: state.pseudo, outcome: outcome
                 });
-                // Reset
+
+                // Reset complet incluant effectifs à 0 et members vide
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), {
                     sl: '', objective: '', status: 'DISPO', startTime: null, sitrep: '',
-                    members: [], missionHistory: [], rtbStatus: 'NONE', junctionFreq: ''
+                    members: [], effectif: 0, missionHistory: [], rtbStatus: 'NONE', junctionFreq: '', cds_owner: null
                 });
                 
                 if (state.role === 'SL') this.logout();
             },
 
             // --- SL ACTIONS ---
-            
-            setTab: function(tab) {
-                state.slTab = tab;
-                this.render();
-            },
+            setTab: function(tab) { state.slTab = tab; this.render(); },
 
             openSitrepModal: function(formType, defaultLabel) {
                 state.activeSitrepForm = formType;
@@ -561,55 +532,54 @@
                 this.renderSitrepModal();
                 document.getElementById('sitrep-modal').classList.remove('hidden');
             },
-
             closeSitrepModal: function() {
                 document.getElementById('sitrep-modal').classList.add('hidden');
                 state.activeSitrepForm = null;
             },
 
             requestRTB: async function(squadId) {
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), {
-                    rtbStatus: 'REQUESTED', sitrep: 'DEMANDE DE RTB',
-                    missionHistory: arrayUnion({ type: 'ALERT', content: "REQ RTB", time: new Date().toISOString() })
-                });
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), { rtbStatus: 'REQUESTED', sitrep: 'DEMANDE DE RTB', missionHistory: arrayUnion({ type: 'ALERT', content: "REQ RTB", time: new Date().toISOString() }) });
             },
-
             approveRTB: async function(squadId, approved) {
                 const status = approved ? 'APPROVED' : 'DENIED';
-                const msg = approved ? 'RTB ACCORDÉ' : 'RTB REFUSÉ';
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), {
-                    rtbStatus: status,
-                    missionHistory: arrayUnion({ type: 'CMD', content: msg, time: new Date().toISOString() })
-                });
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), { rtbStatus: status, missionHistory: arrayUnion({ type: 'CMD', content: approved ? 'RTB ACCORDÉ' : 'RTB REFUSÉ', time: new Date().toISOString() }) });
+            },
+
+            // Helper pour construire les boutons de sélection
+            renderOptionGrid: function(key, options, current) {
+                return `<div class="grid grid-cols-2 gap-2">
+                    ${options.map(opt => `
+                        <button onclick="window.app.setSitrepData('${key}', '${opt}')" class="p-4 border ${current === opt ? 'bg-white text-black font-bold border-white' : 'bg-black text-slate-400 border-slate-700 hover:border-white'} uppercase text-xs transition-colors">${opt}</button>
+                    `).join('')}
+                </div>`;
+            },
+
+            setSitrepData: function(key, val) {
+                state.sitrepData[key] = val;
+                this.renderSitrepModal(); // Re-render to update UI selection
             },
 
             submitSitrep: async function() {
                 const squadId = Object.keys(state.squads).find(k => state.squads[k].sl === state.pseudo);
                 if (!squadId) return;
-
-                let msg = "";
-                const data = state.sitrepData;
-                
-                // Build message based on form inputs (collected via onchange events stored in state.sitrepData via DOM)
+                const d = state.sitrepData;
                 const getVal = (id) => document.getElementById(id)?.value || '';
-                const getCheck = (id) => document.getElementById(id)?.checked;
+                let msg = "";
 
                 if (state.activeSitrepForm === 'CONTACT') {
-                    msg = `CONTACT: ${getVal('sr-count')}x ${getVal('sr-type')} (${getVal('sr-attitude')}) | Dist: ${getVal('sr-dist')}m | Azi: ${getVal('sr-azi')}`;
+                    msg = `CONTACT: ${d.type||'?'} [${d.count||'?'}] (${d.attitude||'?'}) - Dist: ${getVal('sr-dist')}m Az: ${getVal('sr-azi')}`;
                 } else if (state.activeSitrepForm === 'MEDICAL') {
-                    msg = `SANITAIRE: A:${getVal('sr-alpha')} / B:${getVal('sr-bravo')} | EVASAN: ${getCheck('sr-evasan')?'OUI':'NON'} | LZ: ${getVal('sr-lz')}`;
+                    msg = `SANITAIRE: A:${getVal('sr-alpha')} / B:${getVal('sr-bravo')} - EVASAN: ${d.evasan?'OUI':'NON'} - LZ: ${getVal('sr-lz')}`;
                 } else if (state.activeSitrepForm === 'LOG') {
-                    msg = `LOG: ${getVal('sr-item')} (${getVal('sr-urgency')}) à ${getVal('sr-loc')}`;
+                    msg = `LOG: ${getVal('sr-item')} (${d.urgency||'?'}) à ${getVal('sr-loc')}`;
                 } else {
-                    msg = getVal('sr-manual') || data.defaultMsg;
+                    msg = getVal('sr-manual') || d.defaultMsg;
                 }
 
-                const timestamp = new Date().toISOString();
+                const ts = new Date().toISOString();
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), {
-                    sitrep: msg, lastSitrepTime: timestamp,
-                    missionHistory: arrayUnion({ type: 'SITREP', content: msg, time: timestamp })
+                    sitrep: msg, lastSitrepTime: ts, missionHistory: arrayUnion({ type: 'SITREP', content: msg, time: ts })
                 });
-
                 this.closeSitrepModal();
             },
 
@@ -620,368 +590,214 @@
                 members.push({ name: 'SOLDAT', grade: 'Sdt', role: 'Fusilier' });
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), { members, effectif: members.length });
             },
-
             updateMember: async function(idx, field, val) {
                 const squadId = Object.keys(state.squads).find(k => state.squads[k].sl === state.pseudo);
                 const members = [...state.squads[squadId].members];
                 members[idx][field] = val;
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), { members });
             },
-
             removeMember: async function(idx) {
                 const squadId = Object.keys(state.squads).find(k => state.squads[k].sl === state.pseudo);
                 const members = state.squads[squadId].members.filter((_, i) => i !== idx);
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), { members, effectif: members.length });
             },
-
             sitrepAction: function(id, form, label) {
                 const squadId = Object.keys(state.squads).find(k => state.squads[k].sl === state.pseudo);
-                if (id === 'rtb') {
-                    if(confirm("Demander RTB à l'EM ?")) this.requestRTB(squadId);
-                } else {
-                    this.openSitrepModal(form, label);
-                }
+                if (id === 'rtb') { if(confirm("Demander RTB à l'EM ?")) this.requestRTB(squadId); } 
+                else { this.openSitrepModal(form, label); }
             },
-
             sendEndMission: function() {
                 const squadId = Object.keys(state.squads).find(k => state.squads[k].sl === state.pseudo);
                 const note = document.getElementById('final-report-input').value;
-                const status = document.querySelector('input[name="mission-status"]:checked')?.value || 'UNKNOWN';
+                const status = document.querySelector('input[name="mission-status"]:checked').value;
                 if(confirm("Clôturer la mission ?")) this.endMission(squadId, note, status);
             },
-
-            // --- REPORT MODAL ACTIONS (STAFF) ---
             openReportModal: function(logId) {
                 state.activeReportId = logId;
                 const log = state.logs.find(l => l.id === logId);
                 if(!log) return;
-
-                const modal = document.getElementById('report-modal');
-                const content = document.getElementById('report-modal-content');
-                
-                modal.classList.remove('hidden');
-                content.innerHTML = `
-                    <div class="mb-4 border-b border-white/10 pb-2">
-                        <div class="text-xs text-slate-500 uppercase">MISSION</div>
-                        <div class="text-lg font-bold text-white uppercase">${log.objective}</div>
-                        <div class="text-xs text-slate-500 uppercase mt-1">SQUAD LEADER</div>
-                        <div class="text-md font-bold text-[#66fcf1] uppercase">${log.sl} (${log.squad})</div>
-                    </div>
-                    <div class="mb-4">
-                        <div class="text-xs text-slate-500 uppercase mb-1">RESULTAT</div>
-                        <div class="text-md font-bold uppercase ${log.outcome === 'SUCCESS' ? 'text-emerald-500' : (log.outcome === 'FAILURE' ? 'text-red-500' : 'text-slate-400')}">${log.outcome === 'SUCCESS' ? 'SUCCÈS' : (log.outcome === 'FAILURE' ? 'ÉCHEC' : 'INCONNU')}</div>
-                    </div>
-                    <div class="bg-black/50 p-3 border border-white/10">
-                        <div class="text-xs text-slate-500 uppercase mb-2">RAPPORT</div>
-                        <div class="whitespace-pre-wrap text-sm">${log.report}</div>
-                    </div>
-                    <div class="text-xs text-slate-600 mt-4 text-right font-mono">
-                        ${log.timestamp ? new Date(log.timestamp.seconds * 1000).toLocaleString() : ''}
-                    </div>
-                `;
+                document.getElementById('report-modal').classList.remove('hidden');
+                document.getElementById('report-modal-content').innerHTML = `<div class="text-xs text-slate-500 mb-2">${new Date(log.timestamp.seconds*1000).toLocaleString()}</div>${log.report}`;
                 lucide.createIcons();
             },
-
-            closeReportModal: function() {
-                document.getElementById('report-modal').classList.add('hidden');
-                state.activeReportId = null;
-            },
-
+            closeReportModal: function() { document.getElementById('report-modal').classList.add('hidden'); state.activeReportId = null; },
             copyReport: function() {
                 const log = state.logs.find(l => l.id === state.activeReportId);
-                if(!log) return;
-                const text = `RAPPORT MISSION ${log.objective}\nSL: ${log.sl} (${log.squad})\nRESULTAT: ${log.outcome}\nDATE: ${new Date(log.timestamp.seconds*1000).toLocaleString()}\n\nCONTENU:\n${log.report}`;
-                navigator.clipboard.writeText(text).then(() => alert("Rapport copié !"));
+                if(log) navigator.clipboard.writeText(log.report).then(() => alert("Copié !"));
             },
 
-            // --- RENDER ENGINE ---
+            // --- RENDERS ---
             render: function() {
-                const root = document.getElementById('app');
-                // Remove loading
                 const loader = document.getElementById('loading-screen');
                 if (loader && state.user) loader.remove();
-
-                // View Routing
                 if (state.view === 'LANDING') this.renderLanding();
                 else if (state.view === 'STAFF') this.renderStaff();
                 else if (state.view === 'SL') this.renderSL();
-
                 lucide.createIcons();
             },
-
             renderLanding: function() {
-                const root = document.getElementById('app');
-                if (!document.getElementById('squad-grid-landing')) {
-                    root.innerHTML = document.getElementById('tpl-landing').innerHTML;
-                }
-                
-                // Render Squads Grid
+                document.getElementById('app').innerHTML = document.getElementById('tpl-landing').innerHTML;
                 const container = document.getElementById('squad-grid-landing');
-                if(container) {
-                    container.innerHTML = SQUADS_CONFIG.map(s => {
-                        const data = state.squads[s.id] || {};
-                        const isActive = data.status === 'ACTIVE';
-                        const isAssigned = data.status === 'ASSIGNED';
-                        
-                        let classes = `relative p-4 text-left transition-all border h-32 flex flex-col justify-between group `;
-                        let statusTxt = "DISPO";
-                        let statusCol = "text-mil-green";
-
-                        if (isAssigned) {
-                            classes += "border-mil-yellow/50 bg-yellow-900/10 animate-pulse cursor-pointer hover:border-white/20";
-                            statusTxt = "ORDRE REÇU";
-                            statusCol = "text-mil-yellow";
-                        } else if (isActive) {
-                            classes += "border-slate-800 bg-black opacity-50 cursor-not-allowed";
-                            statusTxt = "EN MISSION";
-                            statusCol = "text-mil-red";
-                        } else {
-                            classes += "border-slate-800 bg-slate-900/30 hover:border-white/20 cursor-pointer";
-                        }
-
-                        // Onclick - USING openSLLogin WRAPPER
-                        const action = isActive ? '' : `onclick="window.app.openSLLogin('${s.id}')"`;
-
-                        return `
-                        <button ${action} class="${classes}" ${isActive ? 'disabled' : ''}>
-                            <div class="flex justify-between items-start w-full">
-                                <span class="text-xs font-bold uppercase ${statusCol} tracking-wider">${statusTxt}</span>
-                                <div class="w-2 h-2 rounded-full ${s.color.replace('bg-', 'bg-')}"></div>
-                            </div>
-                            <div>
-                                <h3 class="text-2xl font-black text-white uppercase">${s.name}</h3>
-                                <p class="text-[10px] text-slate-500 font-mono">${s.freq} MHz</p>
-                            </div>
-                            ${data.sl ? `<div class="absolute bottom-2 right-2 text-right"><div class="text-[9px] text-slate-500 uppercase">Leader</div><div class="text-xs font-bold text-white uppercase truncate max-w-[100px]">${data.sl}</div></div>` : ''}
-                        </button>
-                        `;
-                    }).join('');
-                }
+                container.innerHTML = SQUADS_CONFIG.map(s => {
+                    const d = state.squads[s.id] || {};
+                    let cls = "border-slate-800 bg-slate-900/30 hover:border-white/20 cursor-pointer";
+                    let txt = "DISPO", col = "text-mil-green";
+                    if(d.status === 'ACTIVE') { cls = "border-slate-800 bg-black opacity-50 cursor-not-allowed"; txt = "EN MISSION"; col = "text-mil-red"; }
+                    else if(d.status === 'ASSIGNED') { cls = "border-mil-yellow/50 bg-yellow-900/10 animate-pulse cursor-pointer"; txt = "ORDRE REÇU"; col = "text-mil-yellow"; }
+                    return `<button ${d.status === 'ACTIVE' ? '' : `onclick="window.app.openSLLogin('${s.id}')"`} class="relative p-4 text-left transition-all border h-32 flex flex-col justify-between group ${cls}" ${d.status==='ACTIVE'?'disabled':''}>
+                        <div class="flex justify-between items-start w-full"><span class="text-xs font-bold uppercase ${col} tracking-wider">${txt}</span><div class="w-2 h-2 rounded-full ${s.color.replace('bg-', 'bg-')}"></div></div>
+                        <div><h3 class="text-2xl font-black text-white uppercase">${s.name}</h3><p class="text-[10px] text-slate-500 font-mono">${s.freq} MHz</p></div>
+                        ${d.sl ? `<div class="absolute bottom-2 right-2 text-right"><div class="text-[9px] text-slate-500 uppercase">Leader</div><div class="text-xs font-bold text-white uppercase truncate max-w-[100px]">${d.sl}</div></div>` : ''}
+                    </button>`;
+                }).join('');
             },
-
             renderStaff: function() {
-                const root = document.getElementById('app');
-                if (!document.getElementById('staff-squad-grid')) {
-                    root.innerHTML = document.getElementById('tpl-staff').innerHTML;
-                }
-
-                // Update Header Stats & Inputs
-                document.getElementById('total-effectif').innerText = Object.values(state.squads).reduce((acc, curr) => acc + (parseInt(curr.effectif)||0), 0);
+                document.getElementById('app').innerHTML = document.getElementById('tpl-staff').innerHTML;
+                document.getElementById('total-effectif').innerText = Object.values(state.squads).reduce((acc, c) => acc + (parseInt(c.effectif)||0), 0);
                 
-                // Inputs values (only if not focused to avoid jumping)
-                if(document.activeElement.id !== 'em-adjoint-input') document.getElementById('em-adjoint-input').value = state.opSettings.adjoint || '';
-                if(document.activeElement.id !== 'em-stagiaire-input') document.getElementById('em-stagiaire-input').value = state.opSettings.stagiaire || '';
-                if(document.activeElement.id !== 'em-base-select') {
-                    const baseSel = document.getElementById('em-base-select');
-                    baseSel.innerHTML = '<option value="">-- SELECTIONNER --</option>' + BASES.map(b => `<option value="${b}" ${state.opSettings.base===b?'selected':''}>${b}</option>`).join('');
+                // Base Select with OBJECTIVES
+                const baseSel = document.getElementById('em-base-select');
+                baseSel.innerHTML = '<option value="">-- SELECTIONNER --</option>' + OBJECTIVES.map(b => `<option value="${b}" ${state.opSettings.base===b?'selected':''}>${b}</option>`).join('');
+                
+                // CDS Container
+                const cdsCount = state.opSettings.active_cds_count || 0;
+                const cdsContainer = document.getElementById('cds-container');
+                let cdsHtml = '';
+                for(let i=1; i<=cdsCount; i++) {
+                    cdsHtml += `<div class="flex items-center gap-1 bg-white/5 px-2 py-1 border border-white/10 rounded">
+                        <span class="text-[10px] font-bold text-[#66fcf1] uppercase mr-2">CHEF DE SECTION ${i}</span>
+                        ${SQUADS_CONFIG.map(s => {
+                            const squadData = state.squads[s.id] || {};
+                            const isMine = squadData.cds_owner === `CDS ${i}`;
+                            const isOthers = squadData.cds_owner && !isMine;
+                            return `<button onclick="window.app.toggleCDS('${s.id}', ${i})" class="text-[9px] px-1.5 py-0.5 font-bold uppercase border transition-colors ${isMine ? 'bg-emerald-500 text-black border-emerald-500' : (isOthers ? 'bg-black text-slate-600 border-slate-800 cursor-not-allowed' : 'bg-transparent text-slate-400 border-slate-600 hover:border-white')}" ${isOthers?'disabled':''}>${s.name.substring(0,1)}</button>`;
+                        }).join('')}
+                    </div>`;
                 }
+                cdsContainer.innerHTML = cdsHtml;
 
-                // Render Grid
                 const container = document.getElementById('squad-container');
                 container.innerHTML = SQUADS_CONFIG.map(s => {
                     const d = state.squads[s.id] || {};
-                    let border = "border-white/10";
-                    let dot = "bg-slate-600";
-                    let rtbAlert = "";
-
-                    if (d.rtbStatus === 'REQUESTED') {
-                        border = "border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.3)] animate-pulse";
-                        rtbAlert = `<div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-orange-600 text-black text-xs font-bold px-3 py-1 rounded shadow-lg animate-bounce z-10">REQ: RTB</div>`;
-                    } else if (d.status === 'ACTIVE') {
-                        border = "border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.1)]";
-                        dot = "bg-emerald-500";
-                    } else if (d.status === 'ASSIGNED') {
-                        border = "border-yellow-500/50";
-                        dot = "bg-yellow-500 animate-pulse";
-                    }
-
-                    return `
-                    <div class="military-box ${border} p-3 flex flex-col gap-2 min-h-[160px]">
-                        ${rtbAlert}
-                        <div class="corner-tl"></div><div class="corner-tr"></div><div class="corner-bl"></div><div class="corner-br"></div>
-                        
-                        <div class="flex justify-between items-start">
-                            <div class="flex items-center gap-2">
-                                <div class="w-2 h-2 rounded-sm ${dot}"></div>
-                                <h3 class="text-lg font-black uppercase tracking-wider text-white">${s.name}</h3>
-                                <span class="text-[10px] font-mono text-mil-cyan bg-[#1f2833] px-1">${s.freq}</span>
-                            </div>
-                            <input type="number" onchange="window.app.updateSquad('${s.id}', 'effectif', this.value)" class="w-10 bg-black border border-slate-700 text-center font-bold text-white focus:border-mil-cyan outline-none text-sm" value="${d.effectif||''}" placeholder="0">
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-2 mt-1">
-                            <div class="relative">
-                                <label class="text-[8px] uppercase text-slate-500 block mb-0.5">Chef d'Escouade</label>
-                                <input list="sl-suggestions-list" type="text" onchange="window.app.updateSquad('${s.id}', 'sl', this.value)" class="w-full bg-[#1f2833] border ${d.sl?'border-white/40 text-white':'border-slate-700 text-slate-500'} text-xs py-1.5 px-2 uppercase outline-none focus:border-mil-cyan font-bold" placeholder="RECHERCHE..." value="${d.sl||''}">
-                            </div>
-                            <div class="relative">
-                                <label class="text-[8px] uppercase text-slate-500 block mb-0.5">Objectif</label>
-                                <select onchange="window.app.updateSquad('${s.id}', 'objective', this.value)" class="w-full bg-[#1f2833] border border-slate-700 text-xs py-1.5 px-2 uppercase text-white outline-none focus:border-mil-cyan appearance-none">
-                                    <option value="">-- NÉANT --</option>
-                                    ${OBJECTIVES.map(o => `<option value="${o}" ${d.objective===o?'selected':''}>${o}</option>`).join('')}
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="flex-1 flex flex-col justify-end gap-2">
-                            <div class="w-full bg-black/40 border border-white/5 p-1.5 min-h-[30px] flex items-center">
-                                <i data-lucide="activity" class="w-3 h-3 text-slate-600 mr-2 shrink-0"></i>
-                                <span class="text-[10px] text-mil-cyan font-mono truncate w-full uppercase">${d.sitrep || 'AUCUN RAPPORT'}</span>
-                            </div>
-                            ${d.rtbStatus === 'REQUESTED' ? `
-                            <div class="flex gap-2">
-                                <button onclick="window.app.approveRTB('${s.id}', true)" class="flex-1 bg-emerald-900/80 hover:bg-emerald-800 text-white text-[10px] py-1 font-bold border border-emerald-700">ACCORDER</button>
-                                <button onclick="window.app.approveRTB('${s.id}', false)" class="flex-1 bg-red-900/80 hover:bg-red-800 text-white text-[10px] py-1 font-bold border border-red-700">REFUSER</button>
-                            </div>` : ''}
-                        </div>
-
-                        ${d.sl ? `<button onclick="if(confirm('Terminer mission ${s.name}?')) window.app.endMission('${s.id}', 'FIN EM')" class="absolute bottom-2 right-2 p-1 text-red-500/50 hover:text-red-500 transition-colors"><i data-lucide="log-out" class="w-4 h-4"></i></button>` : ''}
-                    </div>
-                    `;
-                }).join('');
-
-                // Render Leaderboard
-                const counts = {};
-                state.logs.forEach(l => { counts[l.sl] = (counts[l.sl] || 0) + 1; });
-                const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]);
-                document.getElementById('leaderboard-container').innerHTML = sorted.map(([n, c], i) => `
-                    <div class="flex justify-between items-center py-1 border-b border-white/5 text-xs">
-                        <div class="flex items-center gap-2"><span class="text-slate-500 w-4">${i+1}.</span><span class="text-slate-300 font-bold">${n}</span></div>
-                        <span class="text-mil-cyan">${c}</span>
-                    </div>
-                `).join('');
-
-                // Render Logs
-                document.getElementById('logs-container').innerHTML = state.logs.map(l => {
-                    // Determine Icon & Color
-                    let icon = '<i data-lucide="help-circle" class="text-slate-500 w-4 h-4"></i>';
-                    let color = 'border-slate-500';
+                    let border = "border-white/10", dot = "bg-slate-600", alert = "";
+                    if(d.rtbStatus==='REQUESTED') { border="border-orange-500 animate-pulse"; alert=`<div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-orange-600 text-black text-xs font-bold px-3 py-1 rounded shadow-lg animate-bounce z-10">REQ: RTB</div>`; }
+                    else if(d.status==='ACTIVE') { border="border-emerald-500/50"; dot="bg-emerald-500"; }
                     
-                    if (l.outcome === 'SUCCESS') {
-                        icon = '<i data-lucide="check-circle" class="text-emerald-500 w-4 h-4"></i>';
-                        color = 'border-emerald-500';
-                    } else if (l.outcome === 'FAILURE') {
-                        icon = '<i data-lucide="x-circle" class="text-red-500 w-4 h-4"></i>';
-                        color = 'border-red-500';
-                    }
+                    // Affichage CDS Owner
+                    const cdsBadge = d.cds_owner ? `<div class="absolute top-2 right-2 bg-indigo-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">${d.cds_owner}</div>` : '';
 
-                    return `
-                    <div onclick="window.app.openReportModal('${l.id}')" class="bg-white/5 p-2 border-l-2 ${color} cursor-pointer hover:bg-white/10 transition-colors">
-                        <div class="flex justify-between mb-1 items-center">
-                            <div class="flex items-center gap-2">
-                                ${icon}
-                                <span class="font-bold text-[#66fcf1] text-[10px] uppercase">${l.sl}</span>
-                                <span class="text-[9px] text-slate-400 uppercase">(${l.squad})</span>
-                            </div>
-                            <span class="text-[9px] text-slate-500 font-mono">${l.timestamp ? new Date(l.timestamp.seconds * 1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : ''}</span>
+                    return `<div class="military-box ${border} p-3 flex flex-col gap-2 min-h-[160px]">
+                        ${alert} ${cdsBadge}
+                        <div class="corner-tl"></div><div class="corner-tr"></div><div class="corner-bl"></div><div class="corner-br"></div>
+                        <div class="flex justify-between items-start"><div class="flex items-center gap-2"><div class="w-2 h-2 rounded-sm ${dot}"></div><h3 class="text-lg font-black uppercase tracking-wider text-white">${s.name}</h3><span class="text-[10px] font-mono text-mil-cyan bg-[#1f2833] px-1">${s.freq}</span></div><input type="number" onchange="window.app.updateSquad('${s.id}', 'effectif', this.value)" class="w-10 bg-black border border-slate-700 text-center font-bold text-white focus:border-mil-cyan outline-none text-sm" value="${d.effectif||''}" placeholder="0"></div>
+                        <div class="grid grid-cols-2 gap-2 mt-1">
+                            <div class="relative"><label class="text-[8px] uppercase text-slate-500 block mb-0.5">Chef d'Escouade</label><input list="sl-suggestions-list" type="text" onchange="window.app.updateSquad('${s.id}', 'sl', this.value)" class="w-full bg-[#1f2833] border ${d.sl?'border-white/40 text-white':'border-slate-700 text-slate-500'} text-xs py-1.5 px-2 uppercase outline-none focus:border-mil-cyan font-bold" placeholder="RECHERCHE..." value="${d.sl||''}"></div>
+                            <div class="relative"><label class="text-[8px] uppercase text-slate-500 block mb-0.5">Objectif</label><select onchange="window.app.updateSquad('${s.id}', 'objective', this.value)" class="w-full bg-[#1f2833] border border-slate-700 text-xs py-1.5 px-2 uppercase text-white outline-none focus:border-mil-cyan appearance-none"><option value="">-- NÉANT --</option>${OBJECTIVES.map(o => `<option value="${o}" ${d.objective===o?'selected':''}>${o}</option>`).join('')}</select></div>
                         </div>
-                        <div class="text-[10px] text-slate-300 uppercase truncate">${l.report}</div>
-                    </div>
-                `}).join('');
+                        <div class="flex-1 flex flex-col justify-end gap-2"><div class="w-full bg-black/40 border border-white/5 p-1.5 min-h-[30px] flex items-center"><i data-lucide="activity" class="w-3 h-3 text-slate-600 mr-2 shrink-0"></i><span class="text-[10px] text-mil-cyan font-mono truncate w-full uppercase">${d.sitrep || 'AUCUN RAPPORT'}</span></div>
+                        ${d.rtbStatus === 'REQUESTED' ? `<div class="flex gap-2"><button onclick="window.app.approveRTB('${s.id}', true)" class="flex-1 bg-emerald-900/80 hover:bg-emerald-800 text-white text-[10px] py-1 font-bold border border-emerald-700">ACCORDER</button><button onclick="window.app.approveRTB('${s.id}', false)" class="flex-1 bg-red-900/80 hover:bg-red-800 text-white text-[10px] py-1 font-bold border border-red-700">REFUSER</button></div>` : ''}
+                        </div>
+                        ${d.sl ? `<button onclick="if(confirm('Terminer mission ${s.name}?')) window.app.endMission('${s.id}', 'FIN EM')" class="absolute bottom-2 right-2 p-1 text-red-500/50 hover:text-red-500 transition-colors"><i data-lucide="log-out" class="w-4 h-4"></i></button>` : ''}
+                    </div>`;
+                }).join('');
+                
+                // Logs & Leaderboard
+                const counts = {}; state.logs.forEach(l => { counts[l.sl] = (counts[l.sl]||0)+1; });
+                document.getElementById('leaderboard-container').innerHTML = Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([n,c],i) => `<div class="flex justify-between items-center py-1 border-b border-white/5 text-xs"><div class="flex items-center gap-2"><span class="text-slate-500 w-4">${i+1}.</span><span class="text-slate-300 font-bold">${n}</span></div><span class="text-mil-cyan">${c}</span></div>`).join('');
+                document.getElementById('logs-container').innerHTML = state.logs.map(l => {
+                    let icon = 'help-circle', col = 'border-slate-500';
+                    if(l.outcome === 'SUCCESS') { icon = 'check-circle'; col = 'border-emerald-500'; }
+                    else if(l.outcome === 'FAILURE') { icon = 'x-circle'; col = 'border-red-500'; }
+                    return `<div onclick="window.app.openReportModal('${l.id}')" class="bg-white/5 p-2 border-l-2 ${col} cursor-pointer hover:bg-white/10 transition-colors"><div class="flex justify-between mb-1 items-center"><div class="flex items-center gap-2"><i data-lucide="${icon}" class="w-3 h-3"></i><span class="font-bold text-[#66fcf1] text-[10px] uppercase">${l.sl}</span><span class="text-[9px] text-slate-400 uppercase">(${l.squad})</span></div><span class="text-[9px] text-slate-500 font-mono">${l.timestamp ? new Date(l.timestamp.seconds*1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : ''}</span></div><div class="text-[10px] text-slate-300 uppercase truncate">${l.report.split('\n')[0]}</div></div>`;
+                }).join('');
             },
-
-            renderSL: function() {
-                const root = document.getElementById('app');
-                if (!document.getElementById('sl-header')) {
-                    root.innerHTML = document.getElementById('tpl-sl').innerHTML;
+            
+            renderSitrepModal: function() {
+                const container = document.getElementById('sitrep-form-content');
+                const d = state.sitrepData;
+                let html = '';
+                if (state.activeSitrepForm === 'CONTACT') {
+                    html = `
+                        ${this.renderOptionGrid('type', ['INFANTERIE', 'VÉHICULE', 'BLINDÉ', 'HÉLICO'], d.type)}
+                        <div class="mt-4"><label class="text-[10px] text-slate-500 font-bold uppercase">NOMBRE</label><input type="number" id="sr-count" class="w-full bg-black border border-slate-600 p-4 text-white text-lg font-bold outline-none touch-input" placeholder="1"></div>
+                        <div class="mt-4">${this.renderOptionGrid('attitude', ['HOSTILE', 'NEUTRE', 'INCONNU'], d.attitude)}</div>
+                        <div class="grid grid-cols-2 gap-4 mt-4">
+                            <div><label class="text-[10px] text-slate-500 font-bold uppercase">DIST (m)</label><input type="number" id="sr-dist" class="w-full bg-black border border-slate-600 p-4 text-white text-lg font-bold outline-none touch-input" placeholder="200"></div>
+                            <div><label class="text-[10px] text-slate-500 font-bold uppercase">AZIMUT</label><input type="text" id="sr-azi" class="w-full bg-black border border-slate-600 p-4 text-white text-lg font-bold outline-none touch-input" placeholder="360"></div>
+                        </div>
+                    `;
+                } else if (state.activeSitrepForm === 'MEDICAL') {
+                    html = `
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-red-900/20 p-2 border border-red-900/50"><label class="text-[10px] text-red-500 font-bold uppercase">ALPHA (GRAVE)</label><input id="sr-alpha" type="number" class="w-full bg-black border border-red-900/50 p-4 text-white text-xl font-bold touch-input" placeholder="0"></div>
+                            <div class="bg-yellow-900/20 p-2 border border-yellow-900/50"><label class="text-[10px] text-yellow-500 font-bold uppercase">BRAVO (LÉGER)</label><input id="sr-bravo" type="number" class="w-full bg-black border border-yellow-900/50 p-4 text-white text-xl font-bold touch-input" placeholder="0"></div>
+                        </div>
+                        <div class="mt-4">${this.renderOptionGrid('evasan', ['NON', 'OUI'], d.evasan ? 'OUI' : 'NON')}</div>
+                        <div class="mt-4"><label class="text-[10px] text-slate-500 font-bold uppercase">LZ / POS</label><input type="text" id="sr-lz" class="w-full bg-black border border-slate-600 p-4 text-white text-lg outline-none touch-input" placeholder="Grille"></div>
+                    `;
+                } else if (state.activeSitrepForm === 'LOG') {
+                    html = `
+                        <div><label class="text-[10px] text-slate-500 font-bold uppercase">TYPE</label><input type="text" id="sr-item" class="w-full bg-black border border-slate-600 p-4 text-white text-lg outline-none touch-input" placeholder="Munitions..."></div>
+                        <div class="mt-4">${this.renderOptionGrid('urgency', ['NORMAL', 'URGENT', 'CRITIQUE'], d.urgency)}</div>
+                        <div class="mt-4"><label class="text-[10px] text-slate-500 font-bold uppercase">POS</label><input type="text" id="sr-loc" class="w-full bg-black border border-slate-600 p-4 text-white text-lg outline-none touch-input" placeholder="Ma position"></div>
+                    `;
+                } else {
+                    html = `<div><label class="text-[10px] text-slate-500 font-bold uppercase">INFO COMPLÉMENTAIRE</label><input type="text" id="sr-manual" class="w-full bg-black border border-slate-600 p-4 text-white text-lg outline-none touch-input" placeholder="${d.defaultMsg}"></div>`;
                 }
-
+                container.innerHTML = html;
+            },
+            renderSL: function() {
+                document.getElementById('app').innerHTML = document.getElementById('tpl-sl').innerHTML;
                 const squadId = Object.keys(state.squads).find(k => state.squads[k].sl === state.pseudo);
-                if (!squadId) return this.logout();
+                if(!squadId) return this.logout();
                 const squad = state.squads[squadId];
                 const config = SQUADS_CONFIG.find(s => s.id === squadId);
-
-                // Header Info
+                
                 document.getElementById('sl-base-display').innerText = state.opSettings.base || 'N/A';
                 document.getElementById('sl-adjoint-display').innerText = state.opSettings.adjoint || 'N/A';
                 document.getElementById('sl-squad-name').innerText = config.name;
                 document.getElementById('sl-freq').innerText = config.freq;
                 document.getElementById('sl-username').innerText = state.pseudo;
                 document.getElementById('sl-objective').innerText = squad.objective || 'STANDBY';
+                document.getElementById('sl-header').className = `p-4 ${config.color} bg-opacity-20 border-b border-white/10 flex justify-between items-end shrink-0 transition-colors duration-300`;
                 
-                // Header Style
-                const header = document.getElementById('sl-header');
-                // remove old classes
-                header.className = `p-4 ${config.color} bg-opacity-20 border-b border-white/10 flex justify-between items-end shrink-0 transition-colors duration-300`;
+                if(squad.rtbStatus === 'APPROVED') document.getElementById('sl-rtb-status').innerHTML = '<div class="text-emerald-500 font-black animate-pulse mb-1">RTB AUTORISÉ</div>';
+                else if(squad.rtbStatus === 'DENIED') document.getElementById('sl-rtb-status').innerHTML = '<div class="text-red-500 font-black mb-1">RTB REFUSÉ</div>';
+                else if(squad.rtbStatus === 'REQUESTED') document.getElementById('sl-rtb-status').innerHTML = '<div class="text-yellow-500 font-bold mb-1">RTB EN ATTENTE...</div>';
 
-                // RTB Status
-                let rtbHtml = '';
-                if (squad.rtbStatus === 'APPROVED') rtbHtml = '<div class="text-emerald-500 font-black animate-pulse mb-1">RTB AUTORISÉ</div>';
-                else if (squad.rtbStatus === 'DENIED') rtbHtml = '<div class="text-red-500 font-black mb-1">RTB REFUSÉ</div>';
-                else if (squad.rtbStatus === 'REQUESTED') rtbHtml = '<div class="text-yellow-500 font-bold mb-1">RTB EN ATTENTE...</div>';
-                document.getElementById('sl-rtb-status').innerHTML = rtbHtml;
-
-                // Tabs State
                 document.querySelectorAll('.tab-btn').forEach(btn => {
-                    const isActive = btn.dataset.tab === state.slTab;
-                    btn.className = `tab-btn flex-1 py-4 text-xs font-bold uppercase tracking-[0.15em] border-r border-white/5 hover:bg-white/5 ${isActive ? 'bg-white/10 text-white border-b-2 border-red-500' : 'text-slate-500'}`;
+                    btn.className = `tab-btn flex-1 py-4 text-xs font-bold uppercase tracking-[0.15em] border-r border-white/5 hover:bg-white/5 ${btn.dataset.tab === state.slTab ? 'bg-white/10 text-white border-b-2 border-red-500' : 'text-slate-500'}`;
                 });
 
-                // Linked Squads Logic
                 const linked = Object.entries(state.squads).filter(([id, s]) => id !== squadId && s.objective === squad.objective && s.status === 'ACTIVE');
-                const liaisonBtn = document.getElementById('tab-liaison');
-                if (linked.length > 0) {
-                    liaisonBtn.classList.remove('hidden');
-                    liaisonBtn.innerHTML = `<span class="flex items-center justify-center gap-2"><i data-lucide="link" class="w-3 h-3"></i> LIAISON</span>`;
-                } else {
-                    liaisonBtn.classList.add('hidden');
-                    if (state.slTab === 'LIAISON') state.slTab = 'TACTIQUE';
-                }
+                const lb = document.getElementById('tab-liaison');
+                if(linked.length > 0) { lb.classList.remove('hidden'); lb.innerHTML = `<span class="flex items-center justify-center gap-2"><i data-lucide="link" class="w-3 h-3"></i> LIAISON</span>`; }
+                else { lb.classList.add('hidden'); if(state.slTab === 'LIAISON') state.slTab = 'TACTIQUE'; }
 
-                // Content
                 const container = document.getElementById('sl-content');
-                if (state.slTab === 'TACTIQUE') {
-                    container.innerHTML = `
-                        <div class="space-y-6 h-full flex flex-col">
-                            <div class="grid grid-cols-2 gap-4 shrink-0">
-                                <div class="military-box p-4 text-center"><div class="corner-tl"></div><div class="corner-tr"></div><div class="corner-bl"></div><div class="corner-br"></div><div class="bg-white/5 text-[10px] uppercase font-bold tracking-[0.2em] text-white/50 px-2 py-1 mb-2 border-b border-white/5 flex items-center gap-2"><div class="w-1 h-3 bg-red-600"></div> EFFECTIF</div><div class="text-4xl font-mono font-bold text-white">${squad.effectif||0}</div></div>
-                                <div class="military-box p-4 text-center"><div class="corner-tl"></div><div class="corner-tr"></div><div class="corner-bl"></div><div class="corner-br"></div><div class="bg-white/5 text-[10px] uppercase font-bold tracking-[0.2em] text-white/50 px-2 py-1 mb-2 border-b border-white/5 flex items-center gap-2"><div class="w-1 h-3 bg-red-600"></div> DÉPART</div><div class="text-2xl font-mono text-white">${squad.startTime ? new Date(squad.startTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '--:--'}</div></div>
-                            </div>
-                            <div class="flex-1">
-                                <div class="flex items-center gap-2 mb-3 text-[10px] uppercase font-bold text-slate-500 tracking-widest"><i data-lucide="activity" class="w-3 h-3"></i> C.R. Tactiques<div class="h-px bg-slate-800 flex-1"></div></div>
-                                <div class="grid grid-cols-2 gap-3 h-full pb-4">
-                                    ${[
-                                        {id:'pos', label:'POSITION TENUE', icon:'map-pin', color:'bg-emerald-800 border-emerald-600', form:'SIMPLE'},
-                                        {id:'move', label:'EN MOUVEMENT', icon:'navigation', color:'bg-blue-800 border-blue-600', form:'SIMPLE'},
-                                        {id:'contact', label:'CONTACT ENI', icon:'crosshair', color:'bg-red-900 border-red-600 animate-pulse', form:'CONTACT'},
-                                        {id:'med', label:'SANITAIRE', icon:'heart-pulse', color:'bg-orange-800 border-orange-600', form:'MEDICAL'},
-                                        {id:'log', label:'LOGISTIQUE', icon:'box', color:'bg-yellow-800 border-yellow-600', form:'LOG'},
-                                        {id:'rtb', label:'DEMANDE RTB', icon:'arrow-right', color:'bg-slate-700 border-slate-500', form:'RTB'}
-                                    ].map(b => `
-                                        <button onclick="window.app.sitrepAction('${b.id}', '${b.form}', '${b.label}')" class="${b.color} bg-opacity-10 border hover:bg-opacity-20 active:scale-95 transition-all text-white p-4 flex flex-col items-center justify-center gap-2 relative overflow-hidden group">
-                                            <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent pointer-events-none"></div>
-                                            <i data-lucide="${b.icon}" class="w-6 h-6 z-10 opacity-80 group-hover:scale-110 transition-transform"></i>
-                                            <span class="font-bold text-xs text-center uppercase z-10 tracking-wider">${b.label}</span>
-                                        </button>
-                                    `).join('')}
-                                </div>
-                            </div>
+                if(state.slTab === 'TACTIQUE') {
+                    container.innerHTML = `<div class="space-y-6 h-full flex flex-col">
+                        <div class="grid grid-cols-2 gap-4 shrink-0">
+                            <div class="military-box p-4 text-center"><div class="corner-tl"></div><div class="corner-tr"></div><div class="corner-bl"></div><div class="corner-br"></div><div class="bg-white/5 text-[10px] uppercase font-bold tracking-[0.2em] text-white/50 px-2 py-1 mb-2 border-b border-white/5 flex items-center gap-2"><div class="w-1 h-3 bg-red-600"></div> EFFECTIF</div><div class="text-4xl font-mono font-bold text-white">${squad.effectif||0}</div></div>
+                            <div class="military-box p-4 text-center"><div class="corner-tl"></div><div class="corner-tr"></div><div class="corner-bl"></div><div class="corner-br"></div><div class="bg-white/5 text-[10px] uppercase font-bold tracking-[0.2em] text-white/50 px-2 py-1 mb-2 border-b border-white/5 flex items-center gap-2"><div class="w-1 h-3 bg-red-600"></div> DÉPART</div><div class="text-2xl font-mono text-white">${squad.startTime ? new Date(squad.startTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '--:--'}</div></div>
                         </div>
-                    `;
-                } else if (state.slTab === 'ESCOUADE') {
-                    container.innerHTML = `
-                        <div class="space-y-4">
-                            <div class="flex justify-between items-center mb-2 pb-2 border-b border-white/10">
-                                <h3 class="text-white font-bold uppercase text-xs tracking-widest">Tableau des Effectifs</h3>
-                                <button onclick="window.app.addMember()" class="bg-[#66fcf1] hover:bg-white text-black text-[10px] font-bold px-3 py-1.5 uppercase flex items-center gap-1"><i data-lucide="user" class="w-3 h-3"></i> Ajouter</button>
-                            </div>
-                            <div class="space-y-2">
-                                ${(squad.members || []).map((m, i) => `
-                                    <div class="bg-white/5 p-2 border border-white/5 flex items-center gap-2 group hover:border-white/20 transition-colors">
-                                        <span class="text-[10px] text-slate-500 font-mono w-4">${i+1}</span>
-                                        <select onchange="window.app.updateMember(${i}, 'grade', this.value)" class="bg-black text-[#66fcf1] text-xs p-1 border border-slate-700 outline-none w-20 uppercase font-bold">
-                                            ${GRADES.map(g => `<option value="${g}" ${m.grade===g?'selected':''}>${g}</option>`).join('')}
-                                        </select>
-                                        <input type="text" onchange="window.app.updateMember(${i}, 'name', this.value)" value="${m.name}" class="bg-transparent text-white text-sm p-1 border-b border-transparent focus:border-[#66fcf1] outline-none flex-1 w-full uppercase">
-                                        <select onchange="window.app.updateMember(${i}, 'role', this.value)" class="bg-black text-slate-300 text-[10px] p-1 border border-slate-700 outline-none w-28 uppercase">
-                                            ${ROLES.map(r => `<option value="${r}" ${m.role===r?'selected':''}>${r}</option>`).join('')}
-                                        </select>
-                                        <button onclick="window.app.removeMember(${i})" class="text-red-900 group-hover:text-red-500 p-2 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                                    </div>
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-3 text-[10px] uppercase font-bold text-slate-500 tracking-widest"><i data-lucide="activity" class="w-3 h-3"></i> C.R. Tactiques<div class="h-px bg-slate-800 flex-1"></div></div>
+                            <div class="grid grid-cols-2 gap-3 h-full pb-4">
+                                ${[{id:'pos', label:'POSITION', icon:'map-pin', color:'bg-emerald-800 border-emerald-600', form:'SIMPLE'}, {id:'move', label:'MOUVEMENT', icon:'navigation', color:'bg-blue-800 border-blue-600', form:'SIMPLE'}, {id:'contact', label:'CONTACT', icon:'crosshair', color:'bg-red-900 border-red-600 animate-pulse', form:'CONTACT'}, {id:'med', label:'SANITAIRE', icon:'heart-pulse', color:'bg-orange-800 border-orange-600', form:'MEDICAL'}, {id:'log', label:'LOGISTIQUE', icon:'box', color:'bg-yellow-800 border-yellow-600', form:'LOG'}, {id:'rtb', label:'DEMANDE RTB', icon:'arrow-right', color:'bg-slate-700 border-slate-500', form:'RTB'}].map(b => `
+                                    <button onclick="window.app.sitrepAction('${b.id}', '${b.form}', '${b.label}')" class="${b.color} bg-opacity-10 border hover:bg-opacity-20 active:scale-95 transition-all text-white p-4 flex flex-col items-center justify-center gap-2 relative overflow-hidden group">
+                                        <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent pointer-events-none"></div>
+                                        <i data-lucide="${b.icon}" class="w-8 h-8 z-10 opacity-80 group-hover:scale-110 transition-transform"></i>
+                                        <span class="font-bold text-sm text-center uppercase z-10 tracking-wider">${b.label}</span>
+                                    </button>
                                 `).join('')}
                             </div>
                         </div>
-                    `;
+                    </div>`;
+                } else if(state.slTab === 'ESCOUADE') {
+                    container.innerHTML = `<div class="space-y-4"><div class="flex justify-between items-center mb-2 pb-2 border-b border-white/10"><h3 class="text-white font-bold uppercase text-xs tracking-widest">Tableau des Effectifs</h3><button onclick="window.app.addMember()" class="bg-[#66fcf1] hover:bg-white text-black text-[10px] font-bold px-3 py-1.5 uppercase flex items-center gap-1"><i data-lucide="user" class="w-3 h-3"></i> Ajouter</button></div><div class="space-y-2">${(squad.members||[]).map((m,i)=>`<div class="bg-white/5 p-2 border border-white/5 flex items-center gap-2 group hover:border-white/20 transition-colors"><span class="text-[10px] text-slate-500 font-mono w-4">${i+1}</span><select onchange="window.app.updateMember(${i}, 'grade', this.value)" class="bg-black text-[#66fcf1] text-xs p-1 border border-slate-700 outline-none w-20 uppercase font-bold">${GRADES.map(g=>`<option value="${g}" ${m.grade===g?'selected':''}>${g}</option>`).join('')}</select><input type="text" onchange="window.app.updateMember(${i}, 'name', this.value)" value="${m.name}" class="bg-transparent text-white text-sm p-1 border-b border-transparent focus:border-[#66fcf1] outline-none flex-1 w-full uppercase"><select onchange="window.app.updateMember(${i}, 'role', this.value)" class="bg-black text-slate-300 text-[10px] p-1 border border-slate-700 outline-none w-28 uppercase">${ROLES.map(r=>`<option value="${r}" ${m.role===r?'selected':''}>${r}</option>`).join('')}</select><button onclick="window.app.removeMember(${i})" class="text-red-900 group-hover:text-red-500 p-2 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>`).join('')}</div></div>`;
+                } else if(state.slTab === 'RAPPORT') {
+                    container.innerHTML = `<div class="flex flex-col h-full"><div class="flex-1 overflow-y-auto mb-4 bg-black/20 border border-white/5 p-4"><div class="space-y-4 border-l border-slate-700 pl-4 ml-2">${(squad.missionHistory||[]).map(e=>`<div class="relative"><div class="absolute -left-[21px] top-1.5 w-2 h-2 rounded-full bg-slate-700 border border-black"></div><div class="text-[10px] text-slate-500 font-mono mb-0.5">${new Date(e.time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div><div class="text-sm text-white font-bold uppercase tracking-wide">${e.content}</div></div>`).join('')}</div></div><div class="mt-auto pt-4 border-t border-white/10"><div class="flex gap-4 mb-4 justify-center"><label class="flex items-center gap-2 cursor-pointer p-4 border border-white/10 bg-black/40 hover:bg-white/5 transition-colors w-1/2 justify-center"><input type="radio" name="mission-status" value="SUCCESS" checked class="accent-emerald-500 w-6 h-6"><span class="text-emerald-500 font-black uppercase text-lg">SUCCÈS</span></label><label class="flex items-center gap-2 cursor-pointer p-4 border border-white/10 bg-black/40 hover:bg-white/5 transition-colors w-1/2 justify-center"><input type="radio" name="mission-status" value="FAILURE" class="accent-red-500 w-6 h-6"><span class="text-red-500 font-black uppercase text-lg">ÉCHEC</span></label></div><textarea id="final-report-input" class="w-full bg-black border border-slate-700 p-4 text-white text-sm mb-4 h-32 resize-none outline-none focus:border-red-500 uppercase font-mono touch-input" placeholder="NOTE DE FIN DE MISSION..."></textarea><button onclick="window.app.sendEndMission()" class="w-full bg-red-900/80 hover:bg-red-800 text-white py-6 font-bold uppercase tracking-[0.2em] flex items-center justify-center gap-2 border border-red-700 text-xl"><i data-lucide="save"></i> CLÔTURER</button></div></div>`;
                 } else if (state.slTab === 'LIAISON') {
                     container.innerHTML = `
                         <div class="space-y-4">
@@ -994,7 +810,7 @@
                                 <div class="corner-tl"></div><div class="corner-tr"></div><div class="corner-bl"></div><div class="corner-br"></div>
                                 <div class="flex items-center justify-between gap-4">
                                     <div class="flex items-center gap-2 text-indigo-300 font-bold uppercase text-xs tracking-widest"><i data-lucide="wifi" class="w-4 h-4"></i> Fréquence Jonction</div>
-                                    <input type="text" placeholder="---.-" onchange="window.app.updateSquad('${squadId}', 'junctionFreq', this.value)" class="bg-black border border-indigo-500/50 text-white text-center font-mono font-bold text-lg w-24 p-1 outline-none focus:border-white" value="${squad.junctionFreq || ''}">
+                                    <input type="text" placeholder="---.-" onchange="window.app.updateSquad('${squadId}', 'junctionFreq', this.value)" class="bg-black border border-indigo-500/50 text-white text-center font-mono font-bold text-lg w-24 p-1 outline-none focus:border-white touch-input" value="${squad.junctionFreq || ''}">
                                 </div>
                                 <p class="text-[9px] text-indigo-400/50 mt-2 text-center uppercase">Définissez la fréquence commune pour ce groupe.</p>
                             </div>
@@ -1023,136 +839,7 @@
                             </div>
                         </div>
                     `;
-                } else if (state.slTab === 'RAPPORT') {
-                    container.innerHTML = `
-                        <div class="flex flex-col h-full">
-                            <div class="flex-1 overflow-y-auto mb-4 bg-black/20 border border-white/5 p-4">
-                                <div class="space-y-4 border-l border-slate-700 pl-4 ml-2">
-                                    ${(squad.missionHistory || []).map(e => `
-                                        <div class="relative">
-                                            <div class="absolute -left-[21px] top-1.5 w-2 h-2 rounded-full bg-slate-700 border border-black"></div>
-                                            <div class="text-[10px] text-slate-500 font-mono mb-0.5">${new Date(e.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
-                                            <div class="text-sm text-white font-bold uppercase tracking-wide">${e.content}</div>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            </div>
-                            <div class="mt-auto pt-4 border-t border-white/10">
-                                <div class="flex gap-4 mb-4 justify-center">
-                                    <label class="flex items-center gap-2 cursor-pointer p-2 border border-white/10 bg-black/40 rounded hover:bg-white/5 transition-colors">
-                                        <input type="radio" name="mission-status" value="SUCCESS" checked class="accent-emerald-500 w-4 h-4">
-                                        <span class="text-emerald-500 font-black uppercase text-sm">SUCCÈS</span>
-                                    </label>
-                                    <label class="flex items-center gap-2 cursor-pointer p-2 border border-white/10 bg-black/40 rounded hover:bg-white/5 transition-colors">
-                                        <input type="radio" name="mission-status" value="FAILURE" class="accent-red-500 w-4 h-4">
-                                        <span class="text-red-500 font-black uppercase text-sm">ÉCHEC</span>
-                                    </label>
-                                </div>
-                                <textarea id="final-report-input" class="w-full bg-black border border-slate-700 p-3 text-white text-sm mb-4 h-24 resize-none outline-none focus:border-red-500 uppercase font-mono" placeholder="NOTE DE FIN DE MISSION..."></textarea>
-                                <button onclick="window.app.sendEndMission()" class="w-full bg-red-900/80 hover:bg-red-800 text-white py-4 font-bold uppercase tracking-[0.2em] flex items-center justify-center gap-2 border border-red-700"><i data-lucide="save"></i> Signer & Clôturer</button>
-                            </div>
-                        </div>
-                    `;
                 }
-            },
-
-            renderSitrepModal: function() {
-                // Logic to inject inputs inside modal based on state.activeSitrepForm
-                const container = document.getElementById('sitrep-form-content');
-                const type = state.activeSitrepForm;
-                let html = '';
-
-                if (type === 'CONTACT') {
-                    html = `
-                        <div class="grid grid-cols-2 gap-4">
-                            <div><label class="text-[10px] text-slate-500 font-bold">TYPE</label><select id="sr-type" class="w-full bg-black border border-slate-600 p-2 text-white text-sm"><option>INFANTERIE</option><option>VÉHICULE</option><option>BLINDÉ</option><option>HÉLICO</option></select></div>
-                            <div><label class="text-[10px] text-slate-500 font-bold">NOMBRE</label><input type="number" id="sr-count" class="w-full bg-black border border-slate-600 p-2 text-white text-sm" placeholder="1"></div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div><label class="text-[10px] text-slate-500 font-bold">ATTITUDE</label><select id="sr-attitude" class="w-full bg-black border border-slate-600 p-2 text-white text-sm"><option>HOSTILE</option><option>NEUTRE</option></select></div>
-                            <div><label class="text-[10px] text-slate-500 font-bold">DIST (m)</label><input type="number" id="sr-dist" class="w-full bg-black border border-slate-600 p-2 text-white text-sm" placeholder="200"></div>
-                        </div>
-                        <div><label class="text-[10px] text-slate-500 font-bold">AZIMUT</label><input type="text" id="sr-azi" class="w-full bg-black border border-slate-600 p-2 text-white text-sm" placeholder="NORD / 360"></div>
-                    `;
-                } else if (type === 'MEDICAL') {
-                    html = `
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="bg-red-900/20 p-2 border border-red-900/50"><label class="text-[10px] text-red-500 font-bold">ALPHA (GRAVE)</label><input id="sr-alpha" type="number" class="w-full bg-black border border-red-900/50 p-2 text-white" placeholder="0"></div>
-                            <div class="bg-yellow-900/20 p-2 border border-yellow-900/50"><label class="text-[10px] text-yellow-500 font-bold">BRAVO (LÉGER)</label><input id="sr-bravo" type="number" class="w-full bg-black border border-yellow-900/50 p-2 text-white" placeholder="0"></div>
-                        </div>
-                        <div class="flex items-center gap-2 py-2"><input type="checkbox" id="sr-evasan" class="w-5 h-5 accent-red-500"><label for="sr-evasan" class="text-sm font-bold uppercase text-white">EVASAN REQUISE</label></div>
-                        <div><label class="text-[10px] text-slate-500 font-bold">LZ / POS</label><input type="text" id="sr-lz" class="w-full bg-black border border-slate-600 p-2 text-white text-sm" placeholder="Grille"></div>
-                    `;
-                } else if (type === 'LOG') {
-                    html = `
-                        <div><label class="text-[10px] text-slate-500 font-bold">TYPE</label><input type="text" id="sr-item" class="w-full bg-black border border-slate-600 p-2 text-white text-sm" placeholder="Munitions..."></div>
-                        <div><label class="text-[10px] text-slate-500 font-bold">URGENCE</label><select id="sr-urgency" class="w-full bg-black border border-slate-600 p-2 text-white text-sm"><option>NORMAL</option><option>URGENT</option><option>CRITIQUE</option></select></div>
-                        <div><label class="text-[10px] text-slate-500 font-bold">POS</label><input type="text" id="sr-loc" class="w-full bg-black border border-slate-600 p-2 text-white text-sm" placeholder="Ma position"></div>
-                    `;
-                } else if (type === 'SIMPLE') {
-                    html = `<div><label class="text-[10px] text-slate-500 font-bold">INFO COMPLÉMENTAIRE</label><input type="text" id="sr-manual" class="w-full bg-black border border-slate-600 p-2 text-white text-sm" placeholder="${state.sitrepData.defaultMsg}"></div>`;
-                }
-                container.innerHTML = html;
-            },
-
-            sitrepAction: function(id, form, label) {
-                const squadId = Object.keys(state.squads).find(k => state.squads[k].sl === state.pseudo);
-                if (id === 'rtb') {
-                    if(confirm("Demander RTB à l'EM ?")) this.requestRTB(squadId);
-                } else {
-                    this.openSitrepModal(form, label);
-                }
-            },
-
-            sendEndMission: function() {
-                const squadId = Object.keys(state.squads).find(k => state.squads[k].sl === state.pseudo);
-                const note = document.getElementById('final-report-input').value;
-                const status = document.querySelector('input[name="mission-status"]:checked').value;
-                if(confirm("Clôturer la mission ?")) this.endMission(squadId, note, status);
-            },
-
-            // --- REPORT MODAL ACTIONS (STAFF) ---
-            openReportModal: function(logId) {
-                state.activeReportId = logId;
-                const log = state.logs.find(l => l.id === logId);
-                if(!log) return;
-
-                const modal = document.getElementById('report-modal');
-                const content = document.getElementById('report-modal-content');
-                
-                modal.classList.remove('hidden');
-                content.innerHTML = `
-                    <div class="mb-4 border-b border-white/10 pb-2">
-                        <div class="text-xs text-slate-500 uppercase">MISSION</div>
-                        <div class="text-lg font-bold text-white uppercase">${log.objective}</div>
-                        <div class="text-xs text-slate-500 uppercase mt-1">SQUAD LEADER</div>
-                        <div class="text-md font-bold text-[#66fcf1] uppercase">${log.sl} (${log.squad})</div>
-                    </div>
-                    <div class="mb-4">
-                        <div class="text-xs text-slate-500 uppercase mb-1">RESULTAT</div>
-                        <div class="text-md font-bold uppercase ${log.outcome === 'SUCCESS' ? 'text-emerald-500' : (log.outcome === 'FAILURE' ? 'text-red-500' : 'text-slate-400')}">${log.outcome === 'SUCCESS' ? 'SUCCÈS' : (log.outcome === 'FAILURE' ? 'ÉCHEC' : 'INCONNU')}</div>
-                    </div>
-                    <div class="bg-black/50 p-3 border border-white/10">
-                        <div class="text-xs text-slate-500 uppercase mb-2">RAPPORT</div>
-                        <div class="whitespace-pre-wrap text-sm">${log.report}</div>
-                    </div>
-                    <div class="text-xs text-slate-600 mt-4 text-right font-mono">
-                        ${log.timestamp ? new Date(log.timestamp.seconds * 1000).toLocaleString() : ''}
-                    </div>
-                `;
-                lucide.createIcons();
-            },
-
-            closeReportModal: function() {
-                document.getElementById('report-modal').classList.add('hidden');
-                state.activeReportId = null;
-            },
-
-            copyReport: function() {
-                const log = state.logs.find(l => l.id === state.activeReportId);
-                if(!log) return;
-                const text = `RAPPORT MISSION ${log.objective}\nSL: ${log.sl} (${log.squad})\nRESULTAT: ${log.outcome}\nDATE: ${new Date(log.timestamp.seconds*1000).toLocaleString()}\n\nCONTENU:\n${log.report}`;
-                navigator.clipboard.writeText(text).then(() => alert("Rapport copié !"));
             }
         };
 
