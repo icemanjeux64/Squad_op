@@ -132,7 +132,7 @@
         
         <!-- Global Header (Date/Time) -->
         <div class="absolute top-0 left-0 w-full p-2 flex justify-between items-center bg-black/50 backdrop-blur-sm border-b border-white/10 z-20">
-            <div class="text-[10px] text-slate-500 font-bold tracking-widest">F.O.F NET V4.0</div>
+            <div class="text-[10px] text-slate-500 font-bold tracking-widest">F.O.F NET V4.0.1</div>
             <div class="text-xs font-mono font-bold text-mil-cyan timer-font" id="global-clock">--:--:--</div>
         </div>
 
@@ -887,38 +887,50 @@
             submitSitrep: async function() {
                 const squadId = Object.keys(state.squads).find(k => state.squads[k].sl === state.pseudo);
                 if (!squadId) return;
-                const d = state.sitrepData;
+
+                let msg = "";
+                const data = state.sitrepData;
+                
+                // Build message based on form inputs (collected via onchange events stored in state.sitrepData via DOM)
                 const getVal = (id) => document.getElementById(id)?.value || '';
                 const getCheck = (id) => document.getElementById(id)?.checked;
-                let msg = "";
 
-                if (state.activeSitrepForm === 'CONTACT') msg = `CONTACT: ${d.type||'?'} [${d.count||'?'}] (${d.attitude||'?'}) - Dist: ${getVal('sr-dist')}m Az: ${getVal('sr-azi')}`;
-                else if (state.activeSitrepForm === 'MEDICAL') msg = `SANITAIRE: A:${getVal('sr-alpha')} / B:${getVal('sr-bravo')} - EVASAN: ${getCheck('sr-evasan')?'OUI':'NON'} - LZ: ${getVal('sr-lz')}`;
-                else if (state.activeSitrepForm === 'LOG') msg = `LOG: ${getVal('sr-item')} (${d.urgency||'?'}) à ${getVal('sr-loc')}`;
-                else msg = getVal('sr-manual') || d.defaultMsg;
+                if (state.activeSitrepForm === 'CONTACT') {
+                    msg = `CONTACT: ${d.type||'?'} [${d.count||'?'}] (${d.attitude||'?'}) - Dist: ${getVal('sr-dist')}m Az: ${getVal('sr-azi')}`;
+                } else if (state.activeSitrepForm === 'MEDICAL') {
+                    msg = `SANITAIRE: A:${getVal('sr-alpha')} / B:${getVal('sr-bravo')} - EVASAN: ${getCheck('sr-evasan')?'OUI':'NON'} - LZ: ${getVal('sr-lz')}`;
+                } else if (state.activeSitrepForm === 'LOG') {
+                    msg = `LOG: ${getVal('sr-item')} (${d.urgency||'?'}) à ${getVal('sr-loc')}`;
+                } else {
+                    msg = getVal('sr-manual') || data.defaultMsg;
+                }
 
-                const ts = new Date().toISOString();
+                const timestamp = new Date().toISOString();
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), {
-                    sitrep: msg, lastSitrepTime: ts, missionHistory: arrayUnion({ type: 'SITREP', content: msg, time: ts })
+                    sitrep: msg, lastSitrepTime: timestamp,
+                    missionHistory: arrayUnion({ type: 'SITREP', content: msg, time: timestamp })
                 });
-                this.showToast("SITREP TRANSMIS", "SUCCESS");
+
                 this.closeSitrepModal();
             },
 
-            // ... CRUD helpers ...
             addMember: async function() {
                 const squadId = Object.keys(state.squads).find(k => state.squads[k].sl === state.pseudo);
                 const members = state.squads[squadId].members || [];
                 if(members.length >= 10) return;
+                
+                // GENERATION MATRICULE AUTO
                 const squadLetter = SQUADS_CONFIG.find(s => s.id === squadId).name.charAt(0);
                 const nextNum = (members.length + 1).toString().padStart(2, '0');
                 const matricule = `${squadLetter}-${nextNum}`;
+                
                 members.push({ name: 'SOLDAT', grade: 'Sdt', role: 'Fusilier', matricule: matricule });
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), { members, effectif: members.length });
             },
             updateMember: async function(idx, field, val) {
                 const squadId = Object.keys(state.squads).find(k => state.squads[k].sl === state.pseudo);
-                const members = [...state.squads[squadId].members]; members[idx][field] = val;
+                const members = [...state.squads[squadId].members];
+                members[idx][field] = val;
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), { members });
             },
             removeMember: async function(idx) {
@@ -953,7 +965,15 @@
                 if(log) navigator.clipboard.writeText(log.report).then(() => this.showToast("RAPPORT COPIÉ", "SUCCESS"));
             },
             renderOptionGrid: function(key, options, current) {
-                return `<div class="grid grid-cols-2 gap-2">${options.map(opt => `<button onclick="window.app.setSitrepData('${key}', '${opt}')" class="p-4 border ${current===opt?'bg-white text-black font-bold border-white':'bg-black text-slate-400 border-slate-700 hover:border-white'} uppercase text-xs transition-colors touch-input flex items-center justify-center">${opt}</button>`).join('')}</div>`;
+                // Build the HTML string carefully
+                let html = '<div class="grid grid-cols-2 gap-2">';
+                options.forEach(opt => {
+                    const activeClass = (current === opt) ? 'bg-white text-black font-bold border-white' : 'bg-black text-slate-400 border-slate-700 hover:border-white';
+                    // Using escaped quotes for the function call inside the onclick attribute
+                    html += '<button onclick="window.app.setSitrepData(\'' + key + '\', \'' + opt + '\')" class="p-4 border ' + activeClass + ' uppercase text-xs transition-colors touch-input flex items-center justify-center">' + opt + '</button>';
+                });
+                html += '</div>';
+                return html;
             },
             setSitrepData: function(key, val) { state.sitrepData[key] = val; this.renderSitrepModal(); },
 
@@ -975,7 +995,7 @@
                 if (cdsContainer) {
                     let cdsHtml = '';
                     for(let i=1; i<=cdsCount; i++) {
-                        cdsHtml += `<button onclick="window.app.openLoginModal('CDS', ${i})" class="military-box w-full h-24 hover:border-indigo-500 hover:bg-indigo-900/10 transition-all group p-4 flex items-center justify-center gap-4 cursor-pointer"><div class="corner-tl"></div><div class="corner-tr"></div><div class="corner-bl"></div><div class="corner-br"></div><i data-lucide="user-check" class="w-8 h-8 text-slate-600 group-hover:text-indigo-500 transition-colors"></i><div class="text-left"><div class="text-lg font-black text-white uppercase tracking-widest leading-none">CHEF DE SECTION ${i}</div><div class="text-[10px] text-slate-500 uppercase">Accès Restreint</div></div></button>`;
+                        cdsHtml += '<button onclick="window.app.openLoginModal(\'CDS\', ' + i + ')" class="military-box w-full h-24 hover:border-indigo-500 hover:bg-indigo-900/10 transition-all group p-4 flex items-center justify-center gap-4 cursor-pointer"><div class="corner-tl"></div><div class="corner-tr"></div><div class="corner-bl"></div><div class="corner-br"></div><i data-lucide="user-check" class="w-8 h-8 text-slate-600 group-hover:text-indigo-500 transition-colors"></i><div class="text-left"><div class="text-lg font-black text-white uppercase tracking-widest leading-none">CHEF DE SECTION ' + i + '</div><div class="text-[10px] text-slate-500 uppercase">Accès Restreint</div></div></button>';
                     }
                     cdsContainer.innerHTML = cdsHtml;
                 }
