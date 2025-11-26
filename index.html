@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD NET // C2 SYSTEM V5</title>
+    <title>SQUAD NET // C2 SYSTEM V5.1</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -75,7 +75,6 @@
         const VISIBILITY = ["Excellente", "Bonne", "Réduite", "Nulle (Nuit noire)"];
         const TOPO_LINES = ["Ligne de Départ (LD)", "Ligne de Coordination", "Point de Contrôle (CP)", "Limite Avant (LOA)"];
         
-        // EVASAN & APPUI
         const EVASAN_PRIO = ["VITAL (Vie en danger)", "PRIORITAIRE (Urgent)", "ROUTINE (Standard)"];
         const EVASAN_MOYEN = ["Hélicoptère", "Véhicule Terrestre", "À pied"];
         const FIRE_VECTEUR = ["Mortier 81mm", "Mortier 120mm", "Artillerie 155mm", "CAS (Aérien)", "Hélico Attaque"];
@@ -120,7 +119,7 @@
                 Check: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>,
                 Lock: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
                 LogOut: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
-                Globe: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10 15.3 15.3 0 0 1 4-10z"/></svg>,
+                Globe: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"/></svg>,
                 Upload: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
                 Download: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
                 Mountain: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m8 3 4 8 5-5 5 15H2L8 3z"/></svg>,
@@ -193,54 +192,117 @@
             );
         };
 
-        // --- MODALS ---
-        const SitrepModal = ({ onClose, type, onConfirm, roster, currentSquadName }) => {
-            const [step, setStep] = useState(1); // Start at 1 since squad is auto-detected
+        // --- MODALS DE MISSION ---
+        const AssignMissionModal = ({ onClose, onAssign }) => {
+            const [title, setTitle] = useState("");
+            const [desc, setDesc] = useState("");
+            return (
+                <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 font-mono">
+                    <div className="bg-slate-950 border-2 border-blue-600 w-full max-w-sm p-4 relative z-10">
+                        <h4 className="text-blue-500 font-mono text-center mb-4 border-b border-blue-900 pb-2 tracking-widest">TRANSMETTRE ORDRE (FRAGO)</h4>
+                        <div className="space-y-4">
+                            <InputField label="OBJET" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: NOUVEL OBJECTIF" />
+                            <textarea className="w-full h-32 bg-black border border-blue-800 text-blue-400 p-3 font-mono text-sm focus:border-blue-500 focus:outline-none resize-none mb-4" placeholder="Détails de la mission..." value={desc} onChange={(e) => setDesc(e.target.value)} />
+                            <div className="flex gap-2"><TacticalButton variant="danger" className="flex-1" onClick={onClose}>ANNULER</TacticalButton><TacticalButton variant="hq" className="flex-1" onClick={() => onAssign(title, desc)}>TRANSMETTRE</TacticalButton></div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const IncomingMissionModal = ({ mission, onAccept, onRefuse }) => {
+            return (
+                <div className="fixed inset-0 z-[300] bg-blue-950/90 backdrop-blur-md flex items-center justify-center p-4 font-mono animate-pulse">
+                    <div className="bg-black border-4 border-blue-500 w-full max-w-md p-6 relative z-10 text-center shadow-[0_0_100px_rgba(59,130,246,0.8)]">
+                        <div className="text-blue-500 mb-4 animate-bounce"><Icon name="Radio" size={64} className="mx-auto"/></div>
+                        <h2 className="text-3xl font-black text-blue-500 mb-2 tracking-[0.2em]">MESSAGE PRIORITAIRE</h2>
+                        <div className="bg-blue-900/20 border border-blue-800 p-4 mb-6 text-left">
+                            <div className="text-xs text-blue-400 uppercase tracking-widest mb-1">OBJET</div><div className="text-xl font-bold text-white mb-4">{mission.title}</div>
+                            <div className="text-xs text-blue-400 uppercase tracking-widest mb-1">CONTENU</div><div className="text-lg font-bold text-white whitespace-pre-wrap">{mission.desc}</div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4"><button onClick={onRefuse} className="w-full py-4 bg-black text-red-600 font-black text-sm hover:bg-red-900/30 tracking-widest border-2 border-red-600 transition-all">REFUSER</button><button onClick={() => onAccept(mission)} className="w-full py-4 bg-blue-600 text-black font-black text-sm hover:bg-white hover:text-blue-600 tracking-widest border-2 border-blue-600 transition-all">ACCEPTER MISSION</button></div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- COMPONENTS APPLICATIFS ---
+
+        // HQ ALERT MODAL (AVEC VALIDATION)
+        const AlertModal = ({ alert, onResponse }) => {
+            return (
+                <div className="fixed inset-0 z-[200] bg-red-950/90 backdrop-blur-md flex items-center justify-center p-4 font-mono animate-pulse">
+                    <div className="bg-black border-4 border-red-600 w-full max-w-md p-6 relative z-10 text-center shadow-[0_0_100px_rgba(220,38,38,0.8)]">
+                        <div className="text-red-500 mb-4 animate-bounce"><Icon name="Siren" size={64} className="mx-auto"/></div>
+                        <h2 className="text-3xl font-black text-red-500 mb-2 tracking-[0.2em]">ALERTE PRIORITAIRE</h2>
+                        <div className="bg-red-950/50 border border-red-800 p-4 mb-6 text-left">
+                            <div className="text-xs text-red-400 uppercase tracking-widest mb-1">ORIGINE</div><div className="text-xl font-bold text-white mb-4">{alert.sender}</div>
+                            <div className="text-xs text-red-400 uppercase tracking-widest mb-1">MESSAGE</div><div className="text-lg font-bold text-white">{alert.message}</div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4"><button onClick={() => onResponse(alert, 'rejected')} className="w-full py-4 bg-black text-red-600 font-black text-sm hover:bg-red-900/30 tracking-widest border-2 border-red-600 transition-all">REFUSER</button><button onClick={() => onResponse(alert, 'validated')} className="w-full py-4 bg-red-600 text-black font-black text-sm hover:bg-white hover:text-red-600 tracking-widest border-2 border-red-600 transition-all">VALIDER DEMANDE</button></div>
+                    </div>
+                </div>
+            );
+        };
+
+        // MODAL SITREP & ENV
+        const SitrepModal = ({ onClose, type, onConfirm, roster, currentSquadName, validSquads }) => {
+            const [step, setStep] = useState(validSquads ? 1 : 2); 
             const [data, setData] = useState({ squad: currentSquadName });
             const [customText, setCustomText] = useState("");
+            const handleSelection = (key, value) => { setData(prev => ({ ...prev, [key]: value })); setStep(prev => prev + 1); };
 
-            const handleSelection = (key, value) => {
-                setData(prev => ({ ...prev, [key]: value }));
-                setStep(prev => prev + 1);
-            };
-
-             // Pour DIVERS, pas d'étapes
             if (type === 'DIVERS') return (<div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 font-mono"><div className="bg-slate-950 border-2 border-emerald-600 w-full max-w-sm p-4 relative z-10"><h4 className="text-emerald-500 font-mono text-center mb-2 border-b border-emerald-900 pb-2 tracking-widest">OBSERVATION</h4><textarea className="w-full h-32 bg-black border border-emerald-800 text-emerald-400 p-3 font-mono text-sm focus:border-emerald-500 focus:outline-none resize-none mb-4" placeholder="EX: RENS, SUSPECTS..." value={customText} onChange={(e) => setCustomText(e.target.value)} autoFocus /><TacticalButton variant="primary" className="w-full" onClick={() => onConfirm({ details: customText || "RAS" })}><Icon name="Check" size={18} /> VALIDER</TacticalButton><button onClick={onClose} className="absolute top-2 right-2 text-emerald-800"><Icon name="X" size={24}/></button></div></div>);
 
-            // Pour ENV, logique simple
-            if (type === 'ENV') {
-                 if(step===1) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">CATÉGORIE</h4><div className="grid grid-cols-1 gap-2"><TacticalButton variant="modal" onClick={() => handleSelection('category', 'MÉTÉO')}>MÉTÉO</TacticalButton><TacticalButton variant="modal" onClick={() => handleSelection('category', 'VISIBILITÉ')}>VISIBILITÉ</TacticalButton><TacticalButton variant="modal" onClick={() => handleSelection('category', 'TOPOGRAPHIE')}>TOPOGRAPHIE (Ligne/Point)</TacticalButton></div></>);
-                 if(data.category === 'MÉTÉO') return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">CONDITION</h4><div className="grid grid-cols-1 gap-2">{WEATHER.map(w => <TacticalButton key={w} variant="modal" onClick={() => onConfirm({ ...data, detail: w })}>{w}</TacticalButton>)}</div></>);
-                 if(data.category === 'VISIBILITÉ') return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">ÉTAT</h4><div className="grid grid-cols-1 gap-2">{VISIBILITY.map(v => <TacticalButton key={v} variant="modal" onClick={() => onConfirm({ ...data, detail: v })}>{v}</TacticalButton>)}</div></>);
-                 if(data.category === 'TOPOGRAPHIE') return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">FRANCHISSEMENT</h4><div className="grid grid-cols-1 gap-2">{TOPO_LINES.map(l => <TacticalButton key={l} variant="modal" onClick={() => onConfirm({ ...data, detail: l })}>{l}</TacticalButton>)}</div></>);
-            }
+            const renderContent = () => {
+                if (type === 'ENV') {
+                    if(step===2) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">CATÉGORIE</h4><div className="grid grid-cols-1 gap-2"><TacticalButton variant="modal" onClick={() => handleSelection('category', 'MÉTÉO')}>MÉTÉO</TacticalButton><TacticalButton variant="modal" onClick={() => handleSelection('category', 'VISIBILITÉ')}>VISIBILITÉ</TacticalButton><TacticalButton variant="modal" onClick={() => handleSelection('category', 'TOPOGRAPHIE')}>TOPOGRAPHIE (Ligne/Point)</TacticalButton></div></>);
+                    if(data.category === 'MÉTÉO') return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">CONDITION</h4><div className="grid grid-cols-1 gap-2">{WEATHER.map(w => <TacticalButton key={w} variant="modal" onClick={() => onConfirm({ ...data, detail: w })}>{w}</TacticalButton>)}</div></>);
+                    if(data.category === 'VISIBILITÉ') return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">ÉTAT</h4><div className="grid grid-cols-1 gap-2">{VISIBILITY.map(v => <TacticalButton key={v} variant="modal" onClick={() => onConfirm({ ...data, detail: v })}>{v}</TacticalButton>)}</div></>);
+                    if(data.category === 'TOPOGRAPHIE') return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">FRANCHISSEMENT</h4><div className="grid grid-cols-1 gap-2">{TOPO_LINES.map(l => <TacticalButton key={l} variant="modal" onClick={() => onConfirm({ ...data, detail: l })}>{l}</TacticalButton>)}</div></>);
+                }
 
-            // Pour les demandes spécifiques (EVASAN, FIRE, LOG) avec GRID obligatoire
-            const renderRequests = () => {
-                // Etape commune : GRID (si pas encore définie)
-                // On insert une étape GRID juste après la sélection principale si besoin, ou à la fin.
-                // Stratégie : step 1,2,3... puis step final = GRID
-                
+                // Logique de filtre : si validSquads existe (CDS), on l'utilise, sinon (SL) on a currentSquadName
+                const squadList = validSquads && validSquads.length > 0 ? validSquads.map(s => s.id) : (currentSquadName ? [currentSquadName] : SQUADS);
+
                 if (type === 'EVASAN_REQ') {
-                    if(step===1) return (<><h4 className="text-amber-500 font-mono text-center mb-4 border-b border-amber-900 pb-2">PRIORITÉ</h4><div className="grid grid-cols-1 gap-2">{EVASAN_PRIO.map(p => <TacticalButton key={p} variant="modal" onClick={() => handleSelection('urgence', p)}>{p}</TacticalButton>)}</div></>);
-                    if(step===2) return (<><h4 className="text-amber-500 font-mono text-center mb-4 border-b border-amber-900 pb-2">MOYEN</h4><div className="grid grid-cols-1 gap-2">{EVASAN_MOYEN.map(m => <TacticalButton key={m} variant="modal" onClick={() => handleSelection('moyen', m)}>{m}</TacticalButton>)}</div></>);
-                    if(step===3) return (<><h4 className="text-amber-500 font-mono text-center mb-4 border-b border-amber-900 pb-2">NB BLESSÉS</h4><div className="grid grid-cols-2 gap-2">{[1,2,3,4,5].map(n => <TacticalButton key={n} variant="modal" onClick={() => handleSelection('nbPax', n)}>{n} PAX</TacticalButton>)}</div></>);
-                    if(step===4) return renderGridInput();
+                    // Etape 1 : Choix Squad (sautée si SL)
+                    if(step===1) return (<><h4 className="text-amber-500 font-mono text-center mb-4 border-b border-amber-900 pb-2">UNITÉ CONCERNÉE</h4><div className="grid grid-cols-2 gap-2">{squadList.map(s => <TacticalButton key={s} variant="modal" onClick={() => handleSelection('squad', s)}>{s}</TacticalButton>)}</div></>);
+                    if(step===2) return (<><h4 className="text-amber-500 font-mono text-center mb-4 border-b border-amber-900 pb-2">PRIORITÉ</h4><div className="grid grid-cols-1 gap-2">{EVASAN_PRIO.map(p => <TacticalButton key={p} variant="modal" onClick={() => handleSelection('urgence', p)}>{p}</TacticalButton>)}</div></>);
+                    if(step===3) return (<><h4 className="text-amber-500 font-mono text-center mb-4 border-b border-amber-900 pb-2">MOYEN</h4><div className="grid grid-cols-1 gap-2">{EVASAN_MOYEN.map(m => <TacticalButton key={m} variant="modal" onClick={() => handleSelection('moyen', m)}>{m}</TacticalButton>)}</div></>);
+                    if(step===4) return (<><h4 className="text-amber-500 font-mono text-center mb-4 border-b border-amber-900 pb-2">NB BLESSÉS</h4><div className="grid grid-cols-2 gap-2">{[1,2,3,4,5].map(n => <TacticalButton key={n} variant="modal" onClick={() => onConfirm({...data, nbPax: n})}>{n} PAX</TacticalButton>)}</div></>);
+                    if(step===5) return renderGridInput();
                 }
                  if (type === 'FIRE_REQ') {
-                    if(step===1) return (<><h4 className="text-amber-500 font-mono text-center mb-4 border-b border-amber-900 pb-2">VECTEUR</h4><div className="grid grid-cols-1 gap-2">{FIRE_VECTEUR.map(v => <TacticalButton key={v} variant="modal" onClick={() => handleSelection('vecteur', v)}>{v}</TacticalButton>)}</div></>);
-                    if(step===2) return (<><h4 className="text-amber-500 font-mono text-center mb-4 border-b border-amber-900 pb-2">CIBLE</h4><div className="grid grid-cols-1 gap-2">{FIRE_CIBLE.map(c => <TacticalButton key={c} variant="modal" onClick={() => handleSelection('cible', c)}>{c}</TacticalButton>)}</div></>);
-                    if(step===3) return (<><h4 className="text-amber-500 font-mono text-center mb-4 border-b border-amber-900 pb-2">EFFET</h4><div className="grid grid-cols-1 gap-2">{FIRE_EFFET.map(e => <TacticalButton key={e} variant="modal" onClick={() => handleSelection('effet', e)}>{e}</TacticalButton>)}</div></>);
-                    if(step===4) return renderGridInput();
+                    if(step===1) return (<><h4 className="text-amber-500 font-mono text-center mb-4 border-b border-amber-900 pb-2">DEMANDEUR</h4><div className="grid grid-cols-2 gap-2">{squadList.map(s => <TacticalButton key={s} variant="modal" onClick={() => handleSelection('squad', s)}>{s}</TacticalButton>)}</div></>);
+                    if(step===2) return (<><h4 className="text-amber-500 font-mono text-center mb-4 border-b border-amber-900 pb-2">VECTEUR</h4><div className="grid grid-cols-1 gap-2">{FIRE_VECTEUR.map(v => <TacticalButton key={v} variant="modal" onClick={() => handleSelection('vecteur', v)}>{v}</TacticalButton>)}</div></>);
+                    if(step===3) return (<><h4 className="text-amber-500 font-mono text-center mb-4 border-b border-amber-900 pb-2">CIBLE</h4><div className="grid grid-cols-1 gap-2">{FIRE_CIBLE.map(c => <TacticalButton key={c} variant="modal" onClick={() => handleSelection('cible', c)}>{c}</TacticalButton>)}</div></>);
+                    if(step===4) return (<><h4 className="text-amber-500 font-mono text-center mb-4 border-b border-amber-900 pb-2">EFFET</h4><div className="grid grid-cols-1 gap-2">{FIRE_EFFET.map(e => <TacticalButton key={e} variant="modal" onClick={() => handleSelection('effet', e)}>{e}</TacticalButton>)}</div></>);
+                    if(step===5) return renderGridInput();
                 }
                 if (type === 'LOG_REQ') {
-                    if(step===1) return (<><h4 className="text-amber-500 font-mono text-center mb-4 border-b border-amber-900 pb-2">BESOIN</h4><div className="grid grid-cols-1 gap-2">{LOG_TYPE.map(t => <TacticalButton key={t} variant="modal" onClick={() => handleSelection('type', t)}>{t}</TacticalButton>)}</div></>);
-                    if(step===2) return (<><h4 className="text-amber-500 font-mono text-center mb-4 border-b border-amber-900 pb-2">DÉLAI</h4><div className="grid grid-cols-1 gap-2">{LOG_URGENCE.map(u => <TacticalButton key={u} variant="modal" onClick={() => handleSelection('urgence', u)}>{u}</TacticalButton>)}</div></>);
-                    if(step===3) return renderGridInput();
+                    if(step===1) return (<><h4 className="text-amber-500 font-mono text-center mb-4 border-b border-amber-900 pb-2">DEMANDEUR</h4><div className="grid grid-cols-2 gap-2">{squadList.map(s => <TacticalButton key={s} variant="modal" onClick={() => handleSelection('squad', s)}>{s}</TacticalButton>)}</div></>);
+                    if(step===2) return (<><h4 className="text-amber-500 font-mono text-center mb-4 border-b border-amber-900 pb-2">BESOIN</h4><div className="grid grid-cols-1 gap-2">{LOG_TYPE.map(t => <TacticalButton key={t} variant="modal" onClick={() => handleSelection('type', t)}>{t}</TacticalButton>)}</div></>);
+                    if(step===3) return (<><h4 className="text-amber-500 font-mono text-center mb-4 border-b border-amber-900 pb-2">DÉLAI</h4><div className="grid grid-cols-1 gap-2">{LOG_URGENCE.map(u => <TacticalButton key={u} variant="modal" onClick={() => handleSelection('urgence', u)}>{u}</TacticalButton>)}</div></>);
+                    if(step===4) return renderGridInput();
                 }
+
+                if (type === 'CONTACT' || type === 'FEU') {
+                    if (step === 2) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">NATURE</h4><div className="grid grid-cols-2 gap-2">{THREATS.map(t => <TacticalButton key={t} variant="modal" onClick={() => handleSelection('menace', t)}>{t}</TacticalButton>)}</div></>);
+                    if (step === 3) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">VOLUME</h4><div className="grid grid-cols-2 gap-2">{VOLUMES.map(v => <TacticalButton key={v} variant="modal" onClick={() => handleSelection('volume', v)}>{v}</TacticalButton>)}</div></>);
+                    if (step === 4) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">ACTIVITÉ</h4><div className="grid grid-cols-1 gap-2">{ACTIVITIES.map(a => <TacticalButton key={a} variant="modal" onClick={() => handleSelection('activity', a)}>{a}</TacticalButton>)}</div></>);
+                    if (step === 5) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">ÉQUIPEMENT</h4><div className="grid grid-cols-1 gap-2">{EQUIPMENT.map(e => <TacticalButton key={e} variant="modal" onClick={() => handleSelection('equipment', e)}>{e}</TacticalButton>)}</div></>);
+                    if (step === 6) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">AZIMUT</h4><div className="grid grid-cols-3 gap-2">{DIRECTIONS.map(d => <TacticalButton key={d} variant="modal" onClick={() => handleSelection('direction', d)}>{d}</TacticalButton>)}</div></>);
+                    if (step === 7) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">DISTANCE</h4><div className="grid grid-cols-1 gap-2">{DISTANCES.map(d => <TacticalButton key={d} variant="modal" onClick={() => onConfirm({ ...data, distance: d })}>{d}</TacticalButton>)}</div></>);
+                }
+                if (type === 'SANTE') {
+                    if (step === 2) return (<><h4 className="text-red-500 font-mono text-center mb-4 border-b border-red-900 pb-2">QUI ?</h4><div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">{roster.map(s => <TacticalButton key={s.id} variant="modal" className="border-red-900 text-red-400 hover:bg-red-950" onClick={() => handleSelection('soldatData', { id: s.id, name: `${s.rank} ${s.name}` })}>{s.rank} {s.name}</TacticalButton>)}</div></>);
+                    if (step === 3) return (<><h4 className="text-red-500 font-mono text-center mb-4 border-b border-red-900 pb-2">BILAN</h4><div className="grid grid-cols-1 gap-2">{HEALTH_STATES.map(s => <TacticalButton key={s} variant="modal" className="border-red-900 text-red-400 hover:bg-red-950" onClick={() => onConfirm({ ...data, etat: s })}>{s}</TacticalButton>)}</div></>);
+                }
+                if (type === 'MVT') return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">MANOEUVRE</h4><div className="grid grid-cols-1 gap-2">{MVT_TYPES.map(t => <TacticalButton key={t} variant="modal" onClick={() => onConfirm({ typeMvt: t })}>{t}</TacticalButton>)}</div></>);
                 return <div>Erreur</div>;
             };
-            
+
             const renderGridInput = () => {
                  return (
                     <div className="space-y-4">
@@ -248,36 +310,14 @@
                         <input className="w-full bg-black border border-amber-700 text-amber-400 p-3 font-mono text-center text-lg focus:border-amber-500 focus:outline-none uppercase" 
                             placeholder="Ex: 046-113" 
                             autoFocus
-                            onKeyDown={(e) => {
-                                if(e.key === 'Enter') onConfirm({ ...data, grid: e.target.value });
-                            }}
+                            onKeyDown={(e) => { if(e.key === 'Enter') onConfirm({ ...data, grid: e.target.value }); }}
                         />
                          <div className="text-[10px] text-center text-amber-800">APPUYEZ SUR ENTRÉE POUR VALIDER</div>
                     </div>
                 );
             };
 
-
-            const renderContentMain = () => {
-                if (type === 'CONTACT' || type === 'FEU') {
-                    if (step === 1) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">NATURE</h4><div className="grid grid-cols-2 gap-2">{THREATS.map(t => <TacticalButton key={t} variant="modal" onClick={() => handleSelection('menace', t)}>{t}</TacticalButton>)}</div></>);
-                    if (step === 2) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">VOLUME</h4><div className="grid grid-cols-2 gap-2">{VOLUMES.map(v => <TacticalButton key={v} variant="modal" onClick={() => handleSelection('volume', v)}>{v}</TacticalButton>)}</div></>);
-                    if (step === 3) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">ACTIVITÉ</h4><div className="grid grid-cols-1 gap-2">{ACTIVITIES.map(a => <TacticalButton key={a} variant="modal" onClick={() => handleSelection('activity', a)}>{a}</TacticalButton>)}</div></>);
-                    if (step === 4) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">ÉQUIPEMENT</h4><div className="grid grid-cols-1 gap-2">{EQUIPMENT.map(e => <TacticalButton key={e} variant="modal" onClick={() => handleSelection('equipment', e)}>{e}</TacticalButton>)}</div></>);
-                    if (step === 5) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">AZIMUT</h4><div className="grid grid-cols-3 gap-2">{DIRECTIONS.map(d => <TacticalButton key={d} variant="modal" onClick={() => handleSelection('direction', d)}>{d}</TacticalButton>)}</div></>);
-                    if (step === 6) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">DISTANCE</h4><div className="grid grid-cols-1 gap-2">{DISTANCES.map(d => <TacticalButton key={d} variant="modal" onClick={() => onConfirm({ ...data, distance: d })}>{d}</TacticalButton>)}</div></>);
-                }
-                if (type === 'SANTE') {
-                    if (step === 1) return (<><h4 className="text-red-500 font-mono text-center mb-4 border-b border-red-900 pb-2">QUI ?</h4><div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">{roster.map(s => <TacticalButton key={s.id} variant="modal" className="border-red-900 text-red-400 hover:bg-red-950" onClick={() => handleSelection('soldatData', { id: s.id, name: `${s.rank} ${s.name}` })}>{s.rank} {s.name}</TacticalButton>)}</div></>);
-                    if (step === 2) return (<><h4 className="text-red-500 font-mono text-center mb-4 border-b border-red-900 pb-2">BILAN</h4><div className="grid grid-cols-1 gap-2">{HEALTH_STATES.map(s => <TacticalButton key={s} variant="modal" className="border-red-900 text-red-400 hover:bg-red-950" onClick={() => onConfirm({ ...data, etat: s })}>{s}</TacticalButton>)}</div></>);
-                }
-                if (type === 'MVT') return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">MANOEUVRE</h4><div className="grid grid-cols-1 gap-2">{MVT_TYPES.map(t => <TacticalButton key={t} variant="modal" onClick={() => onConfirm({ typeMvt: t })}>{t}</TacticalButton>)}</div></>);
-                
-                // Fallback for requests
-                return renderRequests();
-            };
-
-            return (<div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 font-mono"><div className="bg-slate-950 border-2 border-emerald-600 w-full max-w-sm p-0 shadow-[0_0_50px_rgba(16,185,129,0.2)] relative z-10"><div className="bg-emerald-950/50 border-b border-emerald-600 p-3 flex justify-between items-center"><div className="flex items-center gap-2"><div className="w-2 h-2 bg-emerald-500 animate-pulse"></div><h3 className="text-emerald-400 font-bold text-lg tracking-widest">SITREP // {type}</h3></div><button onClick={onClose} className="text-emerald-800 hover:text-red-500"><Icon name="X" size={24}/></button></div><div className="p-6">{renderContentMain()}</div></div></div>);
+            return (<div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 font-mono"><div className="bg-slate-950 border-2 border-emerald-600 w-full max-w-sm p-0 shadow-[0_0_50px_rgba(16,185,129,0.2)] relative z-10"><div className="bg-emerald-950/50 border-b border-emerald-600 p-3 flex justify-between items-center"><div className="flex items-center gap-2"><div className="w-2 h-2 bg-emerald-500 animate-pulse"></div><h3 className="text-emerald-400 font-bold text-lg tracking-widest">SITREP // {type}</h3></div><button onClick={onClose} className="text-emerald-800 hover:text-red-500"><Icon name="X" size={24}/></button></div><div className="p-6">{renderContent()}</div></div></div>);
         };
 
         const ManageSoldierModal = ({ onClose, roster, onDecoSauvage, onPassation }) => {
@@ -401,11 +441,11 @@
                                                 <div className="text-[10px] text-amber-600 border-t border-blue-900/30 pt-1">SOUS ORDRES: {squad.subordinates.join(', ')}</div>
                                             )}
                                             <div className="mt-2 bg-blue-950/20 border border-blue-900/50 p-2 min-h-[60px]"><div className="text-[9px] text-blue-600 uppercase mb-1 flex justify-between"><span>DERNIER SITREP</span><span>{squad.lastLog?.time || "--:--"}</span></div><div className={`text-xs font-mono ${squad.lastLog?.type === 'CONTACT' || squad.lastLog?.type === 'FEU' ? 'text-amber-400' : squad.lastLog?.type === 'SANTE' ? 'text-red-400' : 'text-blue-300'}`}>{squad.lastLog ? `[${squad.lastLog.type}] ${squad.lastLog.message}` : "SILENCE RADIO"}</div></div>
+                                            {hasReport && (<div className="mt-2"><TacticalButton variant="hq" className="w-full" onClick={() => downloadTxtFile(`RETEX_${squad.id}.txt`, squad.finalReport)}><Icon name="Download" size={16} /> TÉLÉCHARGER RETEX</TacticalButton></div>)}
                                             <div className="flex gap-2 mt-auto">
                                                  <TacticalButton variant="hq" className="flex-1 text-[10px] py-2" onClick={() => setAssignModalSquad(squad)}><Icon name="Edit" size={14}/> ORDRES</TacticalButton>
-                                                 {hasReport && (<div className="flex-1"><TacticalButton variant="hq" className="w-full text-[10px] py-2" onClick={() => downloadTxtFile(`RETEX_${squad.id}.txt`, squad.finalReport)}><Icon name="Download" size={14} /></TacticalButton></div>)}
+                                                 <TacticalButton variant="danger" className="flex-1 text-[10px] py-2" onClick={() => dissolveSquad(squad.id)}><Icon name="Trash2" size={14}/> DISSOUDRE</TacticalButton>
                                             </div>
-                                            <TacticalButton variant="danger" className="w-full mt-1 py-2 text-[10px]" onClick={() => dissolveSquad(squad.id)}><Icon name="Trash2" size={14}/> DISSOUDRE</TacticalButton>
                                         </div>
                                     </TacticalCard>
                                 );
@@ -480,6 +520,7 @@
             const addSmartLog = (type, data) => {
                 const t = new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
                 let m = ""; 
+                
                 if (type === 'EVASAN_REQ') m = `DEMANDE EVASAN (${data.squad}): Prio ${data.urgence}, Moyen ${data.moyen}, ${data.nbPax} Pax.`;
                 else if (type === 'FIRE_REQ') m = `DEMANDE FEU: ${data.vecteur} sur ${data.cible}. Effet: ${data.effet}. Grid: ${data.grid}`;
                 else if (type === 'LOG_REQ') m = `DEMANDE LOG: ${data.type}, Urgence: ${data.urgence}. Grid: ${data.grid}`;
@@ -749,7 +790,7 @@
                         )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">{SQUADS.map(squad => { const isTaken = takenSquads[squad] && takenSquads[squad] !== user?.uid; const isMine = takenSquads[squad] === user?.uid; return (<button key={squad} onClick={() => { if(!isTaken) setJoiningSquad(squad); }} disabled={isTaken} className={`relative p-4 border-2 font-mono font-bold text-lg transition-all group overflow-hidden ${isTaken ? 'border-red-900/30 bg-red-950/10 text-red-900 cursor-not-allowed opacity-50' : isMine ? 'border-emerald-400 bg-emerald-900/20 text-emerald-400' : 'border-emerald-900 bg-black text-emerald-700 hover:border-emerald-500 hover:text-emerald-400'}`}><div className={`absolute top-0 left-0 w-1 h-1 ${isTaken ? 'bg-red-900' : 'bg-emerald-500'}`}></div><div className={`absolute bottom-0 right-0 w-1 h-1 ${isTaken ? 'bg-red-900' : 'bg-emerald-500'}`}></div><div className="flex items-center justify-between relative z-10"><span className="tracking-widest">{squad}</span>{isTaken && <Icon name="Lock" size={14}/>}{isMine && <Icon name="Check" size={14}/>}</div></button>); })}</div></div>
+                    <div className="grid grid-cols-2 gap-4">{SQUADS.map(squad => { const isTaken = takenSquads[squad] && takenSquads[squad] !== user?.uid; const isMine = takenSquads[squad] === user?.uid; return (<button key={squad} onClick={() => { if(!isTaken) setJoiningSquad(squad); }} disabled={isTaken} className={`relative p-4 border-2 font-mono font-bold text-lg transition-all group overflow-hidden ${isTaken ? 'border-red-900/30 bg-red-950/10 text-red-900 cursor-not-allowed opacity-50' : isMine ? 'border-emerald-400 bg-emerald-900/20 text-emerald-400' : 'border-emerald-900 bg-black text-emerald-700 hover:border-emerald-500 hover:text-emerald-400'}`}><div className={`absolute top-0 left-0 w-1 h-1 ${isTaken ? 'bg-red-900' : 'bg-emerald-500'}`}></div><div className={`absolute bottom-0 right-0 w-1 h-1 ${isTaken ? 'bg-red-900' : 'bg-emerald-500'}`}></div><div className="flex items-center justify-between relative z-10"><span className="tracking-widest">{squad}</span>{isTaken && <span className="text-xs text-emerald-500 truncate ml-1"> {takenSquads[squad] === user?.uid ? "" : "PRIS"}</span>} {isMine && <Icon name="Check" size={14}/>}</div></button>); })}</div></div>
                 </div>
             );
         };
@@ -881,7 +922,7 @@
                 const fmtMen = (m) => m ? (m==="Infanterie"?"d'infanterie":m==="Sniper"?"de tireurs d'élite":`de type ${m.toLowerCase()}`) : "hostile"; 
                 const fmtDist = (d) => d ? (d.includes("<50m")?"au contact immédiat":d.includes("100m")?"à courte distance":d.includes("300m")?"à moyenne distance":"à longue distance") : ""; 
                 
-                if (logs.length === 0) txt += "Aucun événement notable.\n"; else logs.slice().reverse().forEach(l => { let s = ""; const d = l.raw; const t = l.missionTime; if(l.type === 'CONTACT') s = `À ${t}, visuel confirmé sur ${fmtVol(d.volume)} ${fmtMen(d.menace)} (${d.activity.toLowerCase()}). Equipement identifié : ${d.equipment.toLowerCase()}. Localisation : ${d.direction}, ${fmtDist(d.distance)}.`; else if(l.type === 'FEU') s = `À ${t}, engagement de ${de(fmtVol(d.volume))} ${fmtMen(d.menace)} au ${d.direction}.`; else if(l.type === 'SANTE') { let etatTxt = d.etat; if (d.etat === "Blessé Léger") etatTxt = "a été blessé légèrement"; if (d.etat === "Blessé Grave") etatTxt = "a été blessé gravement"; if (d.etat === "Inconscient") etatTxt = "est inconscient"; if (d.etat === "DCD") etatTxt = "est décédé"; s = `À ${t}, alerte sanitaire : le ${d.soldatData.name} ${etatTxt}.`; } else if(l.type === 'MVT') s = `À ${t}, mouvement tactique : ${d.typeMvt.toLowerCase()}.`; else if(l.type === 'ENV') s = `À ${t}, relevé environnemental : ${d.category} - ${d.detail}.`; else if(l.type === 'DIVERS') s = `À ${t}, renseignement divers : "${d.details}".`; else s = `À ${t} : ${d.details||l.message}.`; txt += `${s}\n`; }); 
+                if (logs.length === 0) txt += "Aucun événement notable.\n"; else logs.slice().reverse().forEach(l => { let s = ""; const d = l.raw; const t = l.missionTime; if(l.type === 'CONTACT') s = `À ${t}, visuel confirmé sur ${fmtVol(d.volume)} ${fmtMen(d.menace)} (${d.activity.toLowerCase()}). Equipement identifié : ${d.equipment.toLowerCase()}. Localisation : ${d.direction}, ${fmtDist(d.distance)}.`; else if(l.type === 'FEU') s = `À ${t}, engagement de ${de(fmtVol(d.volume))} ${fmtMen(d.menace)} au ${d.direction}.`; else if(l.type === 'SANTE') { let etatTxt = d.etat; if (d.etat === "Blessé Léger") etatTxt = "a été blessé légèrement"; if (d.etat === "Blessé Grave") etatTxt = "a été blessé gravement"; if (d.etat === "Inconscient") etatTxt = "est inconscient"; if (d.etat === "DCD") etatTxt = "est décédé"; s = `À ${t}, alerte sanitaire : le ${d.soldatData.name} ${etatTxt}. Prise en charge par l'auxiliaire sanitaire.`; } else if(l.type === 'MVT') s = `À ${t}, mouvement tactique : ${d.typeMvt.toLowerCase()}.`; else if(l.type === 'ENV') s = `À ${t}, relevé environnemental : ${d.category} - ${d.detail}.`; else if(l.type === 'DIVERS') s = `À ${t}, renseignement divers : "${d.details}".`; else s = `À ${t} : ${d.details||l.message}.`; txt += `${s}\n`; }); 
                 
                 txt += `\nBILAN DES OBJECTIFS :\n`;
                 if(objectives.length === 0) txt += "Aucun objectif spécifique défini.\n";
@@ -926,18 +967,7 @@
                         
                         {activeTab === 'roster' && (<div className="space-y-6 animate-fade-in"><TacticalCard title="EFFECTIFS / ORBAT"><div className="flex flex-col gap-3 mb-6 border-b border-emerald-900/50 pb-6"><div className="flex flex-col sm:flex-row gap-2"><div className="flex-1"><input className="w-full bg-black border border-emerald-900 text-emerald-400 p-3 text-sm outline-none uppercase" placeholder="NOM" value={newSoldier.name} onChange={(e)=>setNewSoldier({...newSoldier,name:e.target.value})} /></div><select className="bg-black border border-emerald-900 text-emerald-400 p-3 text-sm outline-none uppercase" value={newSoldier.rank} onChange={(e)=>setNewSoldier({...newSoldier,rank:e.target.value})}>{RANKS.map(r=><option key={r} value={r}>{r}</option>)}</select><select className="bg-black border border-emerald-900 text-emerald-400 p-3 text-sm outline-none uppercase" value={newSoldier.role} onChange={(e)=>setNewSoldier({...newSoldier,role:e.target.value})}>{ROLES.map(r=><option key={r} value={r}>{r}</option>)}</select><button onClick={addSoldier} className="bg-emerald-900/30 border border-emerald-600 text-emerald-400 p-3 hover:bg-emerald-800/50"><Icon name="Plus" size={20}/></button></div></div><div className="flex justify-end mb-2"><button onClick={()=>setManageModalOpen(true)} className="text-xs bg-slate-900 border border-slate-700 text-slate-400 px-3 py-1 hover:text-white">GESTION PERSONNEL</button></div><div className="space-y-2">{roster.map(s=>(<div key={s.id} className="flex items-center justify-between bg-emerald-950/10 border-l-2 border-emerald-600 p-3"><div><div className="text-emerald-400 font-bold font-mono text-sm"><span className="text-emerald-700 mr-2">{s.rank}</span>{s.name}</div><div className="text-emerald-800 text-[10px] uppercase">{s.role}</div></div><span className={`text-[10px] font-bold px-2 py-1 border ${s.status==='APTE'?'border-emerald-800 text-emerald-600':'border-red-800 text-red-500'}`}>{s.status}</span></div>))}</div></TacticalCard></div>)}
                         
-                        {activeTab === 'ops' && (<div className="flex flex-col gap-4 animate-fade-in">
-                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                                <TacticalButton variant="action" onClick={()=>handleActionClick('CONTACT')}><Icon name="Target" size={18}/> CONTACT</TacticalButton>
-                                <TacticalButton variant="action" onClick={()=>handleActionClick('FEU')}><Icon name="Crosshair" size={18}/> FEU</TacticalButton>
-                                <TacticalButton variant="action" onClick={()=>handleActionClick('EVASAN_REQ')}><Icon name="Activity" size={18}/> EVASAN</TacticalButton>
-                                <TacticalButton variant="action" onClick={()=>handleActionClick('FIRE_REQ')}><Icon name="Crosshair" size={18}/> APPUI FEU</TacticalButton>
-                                <TacticalButton variant="action" onClick={()=>handleActionClick('LOG_REQ')}><Icon name="Box" size={18}/> LOGISTIQUE</TacticalButton>
-                                <TacticalButton variant="action" onClick={()=>handleActionClick('MVT')}><Icon name="ChevronRight" size={18}/> MVT</TacticalButton>
-                                <TacticalButton variant="secondary" onClick={()=>handleActionClick('ENV')}><Icon name="Mountain" size={18}/> ENVIRONNEMENT</TacticalButton>
-                                <TacticalButton variant="secondary" onClick={()=>handleActionClick('DIVERS')}><Icon name="FileText" size={18}/> DIVERS</TacticalButton>
-                            </div>
-                            <TacticalCard title="MAIN COURANTE" className="flex-1 min-h-[300px] flex flex-col"><div className="flex-1 overflow-y-auto space-y-1 pr-2 max-h-[400px]">{logs.map(log=>(<div key={log.id} className="font-mono text-xs border-l border-emerald-900 pl-2 py-1 mb-1"><span className="text-emerald-700 mr-2">[{log.missionTime}]</span><span className={`font-bold mr-2 ${['SANTE','EVASAN','FIRE'].includes(log.type)?'text-red-500':log.type==='CONTACT'?'text-amber-500':'text-emerald-500'}`}>{log.type}:</span><span className="text-emerald-300 opacity-80">{log.message}</span></div>))}</div></TacticalCard></div>)}
+                        {activeTab === 'ops' && (<div className="flex flex-col gap-4 animate-fade-in"><div className="grid grid-cols-2 gap-3 sm:grid-cols-4"><TacticalButton variant="action" onClick={()=>handleActionClick('CONTACT')}><Icon name="Target" size={18}/> CONTACT</TacticalButton><TacticalButton variant="action" onClick={()=>handleActionClick('FEU')}><Icon name="Crosshair" size={18}/> FEU</TacticalButton><TacticalButton variant="action" onClick={()=>handleActionClick('EVASAN_REQ')}><Icon name="Activity" size={18}/> EVASAN</TacticalButton><TacticalButton variant="action" onClick={()=>handleActionClick('FIRE_REQ')}><Icon name="Crosshair" size={18}/> APPUI FEU</TacticalButton><TacticalButton variant="action" onClick={()=>handleActionClick('LOG_REQ')}><Icon name="Box" size={18}/> LOGISTIQUE</TacticalButton><TacticalButton variant="action" onClick={()=>handleActionClick('MVT')}><Icon name="ChevronRight" size={18}/> MVT</TacticalButton><TacticalButton variant="secondary" onClick={()=>handleActionClick('ENV')}><Icon name="Mountain" size={18}/> ENVIRONNEMENT</TacticalButton><TacticalButton variant="secondary" onClick={()=>handleActionClick('DIVERS')}><Icon name="FileText" size={18}/> DIVERS</TacticalButton></div><TacticalCard title="MAIN COURANTE" className="flex-1 min-h-[300px] flex flex-col"><div className="flex-1 overflow-y-auto space-y-1 pr-2 max-h-[400px]">{logs.map(log=>(<div key={log.id} className="font-mono text-xs border-l border-emerald-900 pl-2 py-1 mb-1"><span className="text-emerald-700 mr-2">[{log.missionTime}]</span><span className={`font-bold mr-2 ${['SANTE','EVASAN','FIRE'].includes(log.type)?'text-red-500':log.type==='CONTACT'?'text-amber-500':'text-emerald-500'}`}>{log.type}:</span><span className="text-emerald-300 opacity-80">{log.message}</span></div>))}</div></TacticalCard></div>)}
                         
                         {activeTab === 'aar' && (<div className="space-y-4 h-full animate-fade-in">
                             <TacticalCard title="BILAN QUALITATIF">
@@ -954,73 +984,6 @@
                     <nav className="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-emerald-900 p-2 pb-safe z-50"><div className="max-w-4xl mx-auto grid grid-cols-4 gap-1">{['briefing', 'roster', 'ops', 'aar'].map(tab => (<button key={tab} onClick={() => setActiveTab(tab)} className={`flex flex-col items-center p-2 transition-all ${activeTab===tab ? 'bg-emerald-900/30 text-emerald-400 border-t-2 border-emerald-500' : 'text-emerald-900 hover:text-emerald-600'}`}>{tab==='briefing' && <Icon name="FileText" size={20}/>} {tab==='roster' && <Icon name="Users" size={20}/>} {tab==='ops' && <Icon name="Crosshair" size={20}/>} {tab==='aar' && <Icon name="Save" size={20}/>}<span className="text-[9px] uppercase font-bold mt-1 tracking-widest">{tab==='briefing'?'ORDRES':tab==='ops'?'CONDUITE':tab.toUpperCase()}</span></button>))}</div></nav>
                 </div>
             );
-        };
-
-        // --- RACINE ---
-        const App = () => {
-            const [user, setUser] = useState(null);
-            const [squadData, setSquadData] = useStickyState(null, 'squad_session');
-            const [loginState, setLoginState] = useState('idle');
-
-            useEffect(() => { if(!auth) { setUser({uid:'offline'}); return; } signInAnonymously(auth); onAuthStateChanged(auth, setUser); }, []);
-            
-            useEffect(() => {
-                if(loginState === 'pending_hq' && db && user) {
-                    const unsub = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'hq_requests', user.uid), (docSnap) => {
-                        if(docSnap.exists() && docSnap.data().status === 'approved') { setSquadData({ isHQ: true, leaderName: docSnap.data().name, leaderRank: docSnap.data().rank }); setLoginState('idle'); }
-                        else if(docSnap.exists() && docSnap.data().status === 'denied') { alert("ACCÈS REFUSÉ PAR L'ÉTAT-MAJOR"); setLoginState('idle'); }
-                    });
-                    return () => unsub();
-                }
-            }, [loginState, user]);
-
-            const handleHQLogin = async (rank, name) => {
-                 if (!db) { setSquadData({ isHQ: true }); return; }
-                 const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'active_squads'), where("isHQ", "==", true));
-                 
-                 try {
-                    const querySnapshot = await getDocs(q);
-                    if (querySnapshot.empty) {
-                         await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'active_squads', 'HQ_MAIN'), { 
-                             isHQ: true, leaderName: name, leaderRank: rank, userId: user.uid, timestamp: Date.now() 
-                         });
-                         setSquadData({ isHQ: true, leaderName: name, leaderRank: rank });
-                    } else {
-                        setLoginState('pending_hq');
-                        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'hq_requests', user.uid), { 
-                            rank, name, status: 'pending', timestamp: Date.now() 
-                        });
-                    }
-                 } catch(e) {
-                     setSquadData({ isHQ: true, leaderName: name, leaderRank: rank });
-                 }
-            };
-
-            const handleLogout = async () => {
-                if (squadData && db && user) {
-                    try {
-                        const duration = Math.floor((Date.now() - (squadData.startTime || Date.now())) / 1000);
-                        const userStatsRef = doc(db, 'artifacts', appId, 'public', 'data', 'user_stats', squadData.leaderName);
-                        await setDoc(userStatsRef, { totalTime: increment(duration), lastRank: squadData.leaderRank, sessions: increment(1) }, { merge: true });
-                        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'history_logs'), { type: "FIN_SERVICE", message: `FIN DE SERVICE: ${squadData.leaderRank} ${squadData.leaderName} (${Math.floor(duration/60)} min)`, timestamp: Date.now() });
-                        
-                        if(!squadData.isHQ) {
-                            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'active_squads', squadData.name));
-                        } else {
-                             await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'active_squads', 'HQ_MAIN'));
-                        }
-                    } catch(e) {}
-                }
-                setSquadData(null);
-                window.localStorage.clear();
-            };
-
-            if (!user) return <div className="h-screen bg-black flex items-center justify-center text-emerald-500 font-mono tracking-widest animate-pulse">INITIALISATION SYSTÈME...</div>;
-            if (loginState === 'pending_hq') return <div className="h-screen bg-black flex items-center justify-center text-blue-500 font-mono tracking-widest animate-pulse">EN ATTENTE VALIDATION ÉTAT-MAJOR...</div>;
-            if (!squadData) return <SquadSelector user={user} onSelectSquad={setSquadData} onHQRequest={handleHQLogin} />;
-            if (squadData.isHQ) return <HQDashboard onLogout={handleLogout} user={user} />;
-            if (squadData.isSection) return <SectionDashboard onLogout={handleLogout} user={user} squadData={squadData} />;
-            return <MainApp squadData={{...squadData, startTime: squadData.startTime || Date.now()}} user={user} onLogout={handleLogout} />;
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
