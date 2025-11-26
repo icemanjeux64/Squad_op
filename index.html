@@ -67,6 +67,13 @@
             font-variant-numeric: tabular-nums;
             letter-spacing: 0.1em;
         }
+
+        /* Toast Animation */
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .toast-enter { animation: slideIn 0.3s ease-out forwards; }
     </style>
     <script>
         tailwind.config = {
@@ -101,6 +108,22 @@
         </div>
     </div>
 
+    <!-- TOAST CONTAINER -->
+    <div id="toast-container" class="fixed top-14 right-4 z-[60] flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- CONFIRMATION MODAL -->
+    <div id="custom-confirm-modal" class="fixed inset-0 bg-black/90 z-[70] hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="military-box p-6 max-w-sm w-full border-white/30 bg-[#0f1419] shadow-2xl text-center">
+            <div class="corner-tl"></div><div class="corner-tr"></div><div class="corner-bl"></div><div class="corner-br"></div>
+            <h3 id="confirm-title" class="text-xl font-black text-white uppercase tracking-widest mb-2">CONFIRMATION</h3>
+            <p id="confirm-message" class="text-slate-400 text-sm mb-6">Êtes-vous sûr de vouloir exécuter cette action ?</p>
+            <div class="flex gap-3">
+                <button id="confirm-btn-yes" class="flex-1 bg-emerald-900/80 hover:bg-emerald-800 text-white font-bold py-3 border border-emerald-700 uppercase tracking-widest">OUI</button>
+                <button onclick="document.getElementById('custom-confirm-modal').classList.add('hidden')" class="flex-1 bg-red-900/80 hover:bg-red-800 text-white font-bold py-3 border border-red-700 uppercase tracking-widest">NON</button>
+            </div>
+        </div>
+    </div>
+
     <!-- TEMPLATES (Hidden, used by JS to render) -->
     
     <!-- 1. LOGIN / LANDING -->
@@ -109,7 +132,7 @@
         
         <!-- Global Header (Date/Time) -->
         <div class="absolute top-0 left-0 w-full p-2 flex justify-between items-center bg-black/50 backdrop-blur-sm border-b border-white/10 z-20">
-            <div class="text-[10px] text-slate-500 font-bold tracking-widest">F.O.F NET V3.8.1</div>
+            <div class="text-[10px] text-slate-500 font-bold tracking-widest">F.O.F NET V3.9</div>
             <div class="text-xs font-mono font-bold text-mil-cyan timer-font" id="global-clock">--:--:--</div>
         </div>
 
@@ -189,9 +212,29 @@
                     </div>
                     
                     <!-- Settings (Only for true EM, hidden for CDS) -->
-                    <div class="flex gap-2 items-center flex-1 justify-end" id="em-settings-panel">
+                    <div class="flex gap-2 items-center flex-1 justify-end flex-wrap" id="em-settings-panel">
+                         <!-- NEW: OPS CONTEXT -->
                         <div class="flex flex-col">
-                            <label class="text-[8px] text-[#66fcf1] uppercase">Base</label>
+                            <label class="text-[8px] text-[#66fcf1] uppercase">MÉTÉO</label>
+                            <select onchange="window.app.updateSettings('weather', this.value)" class="bg-[#0b0c10] text-white border border-slate-600 text-[10px] py-1 px-1 w-20 uppercase outline-none focus:border-[#66fcf1]" id="em-weather-select">
+                                <option value="CLAIR">CLAIR</option><option value="NUAGEUX">NUAGEUX</option><option value="PLUIE">PLUIE</option><option value="BROUILLARD">BROUILLARD</option><option value="TEMPÊTE">TEMPÊTE</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col">
+                            <label class="text-[8px] text-[#66fcf1] uppercase">VISIBILITÉ</label>
+                            <select onchange="window.app.updateSettings('visibility', this.value)" class="bg-[#0b0c10] text-white border border-slate-600 text-[10px] py-1 px-1 w-20 uppercase outline-none focus:border-[#66fcf1]" id="em-vis-select">
+                                <option value="JOUR">JOUR</option><option value="NUIT">NUIT</option><option value="NVG">NVG</option><option value="AUBE">AUBE</option><option value="CRÉPUSCULE">CRÉPUSCULE</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col">
+                            <label class="text-[8px] text-[#66fcf1] uppercase">ROE</label>
+                            <select onchange="window.app.updateSettings('roe', this.value)" class="bg-[#0b0c10] text-white border border-slate-600 text-[10px] py-1 px-1 w-24 uppercase outline-none focus:border-[#66fcf1]" id="em-roe-select">
+                                <option value="TIR À VUE">TIR À VUE</option><option value="RIPOSTE">RIPOSTE</option><option value="RESTRICTIF">RESTRICTIF</option><option value="CESSEZ LE FEU">CESSEZ LE FEU</option>
+                            </select>
+                        </div>
+
+                        <div class="flex flex-col border-l border-slate-700 pl-2">
+                            <label class="text-[8px] text-slate-400 uppercase">Base</label>
                             <select id="em-base-select" onchange="window.app.updateSettings('base', this.value)" class="bg-[#0b0c10] text-white border border-slate-600 text-[10px] py-1 px-1 w-24 uppercase outline-none focus:border-[#66fcf1]">
                             </select>
                         </div>
@@ -277,7 +320,9 @@
                 <div class="flex gap-2 text-slate-400 items-center">
                     <div class="text-[#66fcf1] font-mono font-bold timer-font" id="sl-clock">--:--:--</div>
                     <div class="h-3 w-px bg-slate-600 mx-1"></div>
-                    <span>BASE: <span class="text-white font-bold" id="sl-base-display">...</span></span>
+                    <div id="sl-env-display" class="flex gap-2 text-[9px] font-bold text-white">
+                        <!-- Injecté: Météo / Visibilité / ROE -->
+                    </div>
                 </div>
                 <button onclick="window.app.logout()" class="text-red-500 font-bold border border-red-900/50 px-2 py-1 hover:bg-red-900/20 text-[9px]">DÉCONNEXION</button>
             </div>
@@ -384,7 +429,7 @@
             view: 'LANDING',
             pseudo: localStorage.getItem('fof_ops_pseudo') || '',
             squads: {},
-            opSettings: {},
+            opSettings: {}, // { base, adjoint, weather, visibility, roe }
             logs: [],
             slTab: 'TACTIQUE',
             activeSitrepForm: null,
@@ -505,12 +550,46 @@
                     this.render();
                     return;
                 }
-                // CDS Auto-reconnect (via local storage role hint could be better but for now simple check)
-                // Staff no auto login for security usually
+            },
+
+            // --- HELPERS UI ---
+            showConfirm: function(title, message, onConfirm) {
+                const modal = document.getElementById('custom-confirm-modal');
+                document.getElementById('confirm-title').innerText = title;
+                document.getElementById('confirm-message').innerText = message;
+                modal.classList.remove('hidden');
+                
+                const yesBtn = document.getElementById('confirm-btn-yes');
+                // Clone to remove old event listeners
+                const newBtn = yesBtn.cloneNode(true);
+                yesBtn.parentNode.replaceChild(newBtn, yesBtn);
+                
+                newBtn.onclick = () => {
+                    onConfirm();
+                    modal.classList.add('hidden');
+                };
+            },
+
+            showToast: function(message, type = 'INFO') {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                
+                let bgClass = 'bg-slate-800 border-slate-600';
+                if (type === 'SUCCESS') bgClass = 'bg-emerald-900/90 border-emerald-500 text-emerald-100';
+                if (type === 'ERROR') bgClass = 'bg-red-900/90 border-red-500 text-red-100';
+                
+                toast.className = `p-3 rounded border shadow-xl text-xs font-bold uppercase tracking-wide toast-enter pointer-events-auto cursor-pointer ${bgClass}`;
+                toast.innerText = message;
+                toast.onclick = () => toast.remove();
+
+                container.appendChild(toast);
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    setTimeout(() => toast.remove(), 300);
+                }, 4000);
             },
 
             // --- ACTIONS ---
-            
             openLoginModal: function(type, cdsIndex = 0) {
                 const modal = document.getElementById('login-modal');
                 const content = document.getElementById('modal-content');
@@ -575,15 +654,15 @@
                 const pseudoInput = document.getElementById('login-pseudo');
                 const pseudo = pseudoInput ? pseudoInput.value.trim() : state.squads[state.selectedSquadId]?.sl;
                 
-                if (!pseudo) return alert("Identifiant requis");
+                if (!pseudo) { this.showToast("Identifiant requis", "ERROR"); return; }
 
                 if (mode === 'STAFF') {
-                    if (!STAFF_LIST.some(n => n.toLowerCase() === pseudo.toLowerCase())) return alert("Accès refusé");
+                    if (!STAFF_LIST.some(n => n.toLowerCase() === pseudo.toLowerCase())) { this.showToast("Accès non autorisé", "ERROR"); return; }
                     state.role = 'STAFF';
                     state.view = 'STAFF';
                 } else if (mode === 'CDS') {
                     state.role = 'CDS';
-                    state.view = 'STAFF'; // Re-uses Staff View but limited
+                    state.view = 'STAFF'; 
                     state.cdsIndex = extraParam;
                 } else {
                     // SL Login
@@ -611,26 +690,29 @@
                 localStorage.setItem('fof_ops_pseudo', pseudo);
                 this.closeModal();
                 this.render();
+                this.showToast(`BIENVENUE, ${pseudo}`, "SUCCESS");
             },
 
             logout: function() {
-                state.role = null;
-                state.view = 'LANDING';
-                state.pseudo = '';
-                state.slTab = 'TACTIQUE';
-                state.cdsIndex = 0;
-                localStorage.removeItem('fof_ops_pseudo');
-                this.render();
+                this.showConfirm("DÉCONNEXION", "Voulez-vous vraiment vous déconnecter ?", () => {
+                    state.role = null;
+                    state.view = 'LANDING';
+                    state.pseudo = '';
+                    state.slTab = 'TACTIQUE';
+                    state.cdsIndex = 0;
+                    localStorage.removeItem('fof_ops_pseudo');
+                    this.render();
+                });
             },
 
             // --- UPDATES & ACTIONS ---
 
             updateSettings: async function(key, val) {
-                // Optimistic Update
                 state.opSettings[key] = val;
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'config', 'ops'), {
                     ...state.opSettings, [key]: val
                 }, { merge: true });
+                this.showToast(`CONFIG MISE À JOUR: ${key}`, "INFO");
             },
 
             updateSquad: async function(squadId, field, val) {
@@ -675,7 +757,13 @@
                     missionStartReal: null, missionEndReal: null, effectif: 0
                 });
                 
-                if (state.role === 'SL') this.logout();
+                this.showToast("MISSION CLÔTURÉE", "SUCCESS");
+                
+                if (state.role === 'SL') {
+                    state.role = null;
+                    state.view = 'LANDING';
+                    this.render();
+                }
             },
 
             // --- EM / CDS LOGIC ---
@@ -747,6 +835,7 @@
 
             requestRTB: async function(squadId) {
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), { rtbStatus: 'REQUESTED', sitrep: 'DEMANDE DE RTB', missionHistory: arrayUnion({ type: 'ALERT', content: "REQ RTB", time: new Date().toISOString() }) });
+                this.showToast("DEMANDE RTB ENVOYÉE", "SUCCESS");
             },
             approveRTB: async function(squadId, approved) {
                 const status = approved ? 'APPROVED' : 'DENIED';
@@ -763,8 +852,10 @@
                 if (msg.includes('DÉPART MISSION')) {
                     updates.missionStartReal = ts;
                     updates.missionEndReal = null; // Reset end if restarting
+                    this.showToast("CHRONO DÉMARRÉ", "SUCCESS");
                 } else if (msg.includes('RETOUR BASE')) {
                     updates.missionEndReal = ts;
+                    this.showToast("CHRONO ARRÊTÉ", "SUCCESS");
                 }
                 
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), updates);
@@ -787,15 +878,21 @@
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), {
                     sitrep: msg, lastSitrepTime: ts, missionHistory: arrayUnion({ type: 'SITREP', content: msg, time: ts })
                 });
+                this.showToast("SITREP TRANSMIS", "SUCCESS");
                 this.closeSitrepModal();
             },
 
-            // ... (Rest of CRUD helpers remain mostly same) ...
             addMember: async function() {
                 const squadId = Object.keys(state.squads).find(k => state.squads[k].sl === state.pseudo);
                 const members = state.squads[squadId].members || [];
                 if(members.length >= 10) return;
-                members.push({ name: 'SOLDAT', grade: 'Sdt', role: 'Fusilier' });
+                
+                // GENERATION MATRICULE AUTO
+                const squadLetter = SQUADS_CONFIG.find(s => s.id === squadId).name.charAt(0);
+                const nextNum = (members.length + 1).toString().padStart(2, '0');
+                const matricule = `${squadLetter}-${nextNum}`;
+                
+                members.push({ name: 'SOLDAT', grade: 'Sdt', role: 'Fusilier', matricule: matricule });
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), { members, effectif: members.length });
             },
             updateMember: async function(idx, field, val) {
@@ -811,7 +908,7 @@
             },
             sitrepAction: function(id, form, label) {
                 const squadId = Object.keys(state.squads).find(k => state.squads[k].sl === state.pseudo);
-                if (id === 'rtb') { if(confirm("Demander RTB à l'EM ?")) this.requestRTB(squadId); }
+                if (id === 'rtb') { this.showConfirm("CONFIRMER RTB", "Demander un retour base à l'EM ?", () => this.requestRTB(squadId)); }
                 else if (id === 'depart') { this.submitSitrepDirect(squadId, 'DÉPART MISSION - SORTIE DE BASE'); }
                 else if (id === 'retour') { this.submitSitrepDirect(squadId, 'RETOUR BASE - FIN DE MOUVEMENT'); }
                 else { this.openSitrepModal(form, label); }
@@ -820,7 +917,7 @@
                 const squadId = Object.keys(state.squads).find(k => state.squads[k].sl === state.pseudo);
                 const note = document.getElementById('final-report-input').value;
                 const status = document.querySelector('input[name="mission-status"]:checked').value;
-                if(confirm("Clôturer la mission ?")) this.endMission(squadId, note, status);
+                this.showConfirm("CLÔTURE MISSION", "Valider le rapport et terminer la mission ?", () => this.endMission(squadId, note, status));
             },
             openReportModal: function(logId) {
                 state.activeReportId = logId;
@@ -833,7 +930,7 @@
             closeReportModal: function() { document.getElementById('report-modal').classList.add('hidden'); state.activeReportId = null; },
             copyReport: function() {
                 const log = state.logs.find(l => l.id === state.activeReportId);
-                if(log) navigator.clipboard.writeText(log.report).then(() => alert("Copié !"));
+                if(log) navigator.clipboard.writeText(log.report).then(() => this.showToast("RAPPORT COPIÉ", "SUCCESS"));
             },
 
             // Helper UI for modal
@@ -921,6 +1018,11 @@
                     const baseSel = document.getElementById('em-base-select');
                     if(baseSel && baseSel.innerHTML.trim() === '') baseSel.innerHTML = '<option value="">--</option>' + OBJECTIVES.map(b => `<option value="${b}" ${state.opSettings.base===b?'selected':''}>${b}</option>`).join('');
                     if(document.activeElement.id !== 'em-adjoint-input') document.getElementById('em-adjoint-input').value = state.opSettings.adjoint || '';
+                    
+                    // Update Env Selectors
+                    if(document.activeElement.id !== 'em-weather-select') document.getElementById('em-weather-select').value = state.opSettings.weather || 'CLAIR';
+                    if(document.activeElement.id !== 'em-vis-select') document.getElementById('em-vis-select').value = state.opSettings.visibility || 'JOUR';
+                    if(document.activeElement.id !== 'em-roe-select') document.getElementById('em-roe-select').value = state.opSettings.roe || 'TIR À VUE';
                 }
 
                 document.getElementById('total-effectif').innerText = Object.values(state.squads).reduce((acc, c) => acc + (parseInt(c.effectif)||0), 0);
@@ -961,19 +1063,26 @@
                     container.innerHTML = SQUADS_CONFIG.map(s => {
                         const d = state.squads[s.id] || {};
                         
-                        // FILTER FOR CDS: Show only mine or unassigned? No, usually CDS needs situational awareness, 
-                        // BUT if requirement is "interface hybrid", let's show all but highlight mine.
-                        // If User requested "ne verra que les escouades selectionnées", let's filter.
+                        // FILTER FOR CDS
                         if (state.role === 'CDS' && d.cds_owner !== `CDS ${state.cdsIndex}`) return ''; 
 
-                        let border = "border-white/10", dot = "bg-slate-600", alert = "";
-                        if(d.rtbStatus==='REQUESTED') { border="border-orange-500 animate-pulse"; alert=`<div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-orange-600 text-black text-xs font-bold px-3 py-1 rounded shadow-lg animate-bounce z-10">REQ: RTB</div>`; }
-                        else if(d.status==='ACTIVE') { border="border-emerald-500/50"; dot="bg-emerald-500"; }
+                        let border = "border-white/10", dot = "bg-slate-600", alert = "", bg = "";
                         
-                        // CDS Badge logic
+                        // TIC LOGIC (Red Flash)
+                        if (d.sitrep && d.sitrep.startsWith('CONTACT')) {
+                            border = "border-red-600 animate-pulse";
+                            bg = "bg-red-900/20";
+                            alert = `<div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-red-600 text-white text-xs font-black px-3 py-1 rounded shadow-lg animate-bounce z-10 border border-white">TIC - CONTACT</div>`;
+                        } else if(d.rtbStatus==='REQUESTED') { 
+                            border="border-orange-500 animate-pulse"; 
+                            alert=`<div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-orange-600 text-black text-xs font-bold px-3 py-1 rounded shadow-lg animate-bounce z-10">REQ: RTB</div>`; 
+                        } else if(d.status==='ACTIVE') { 
+                            border="border-emerald-500/50"; dot="bg-emerald-500"; 
+                        }
+                        
                         const cdsBadge = d.cds_owner ? `<div class="absolute top-2 right-2 bg-indigo-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded uppercase">${d.cds_owner}</div>` : '';
 
-                        return `<div class="military-box ${border} p-2 flex flex-col gap-1 min-h-[140px]">
+                        return `<div class="military-box ${border} ${bg} p-2 flex flex-col gap-1 min-h-[140px]">
                             ${alert} ${cdsBadge}
                             <div class="corner-tl"></div><div class="corner-tr"></div><div class="corner-bl"></div><div class="corner-br"></div>
                             <div class="flex justify-between items-start"><div class="flex items-center gap-2"><div class="w-2 h-2 rounded-sm ${dot}"></div><h3 class="text-md font-black uppercase tracking-wider text-white">${s.name}</h3><span class="text-[9px] font-mono text-mil-cyan bg-[#1f2833] px-1">${s.freq}</span></div><input type="number" inputmode="numeric" pattern="[0-9]*" onchange="window.app.updateSquad('${s.id}', 'effectif', this.value)" class="w-8 bg-black border border-slate-700 text-center font-bold text-white focus:border-mil-cyan outline-none text-xs" value="${d.effectif||''}" placeholder="0"></div>
@@ -1023,6 +1132,14 @@
                 const adjDisp = document.getElementById('sl-adjoint-display');
                 if(adjDisp) adjDisp.innerText = state.opSettings.adjoint || 'N/A';
                 
+                // Env Display
+                const envDisp = document.getElementById('sl-env-display');
+                if(envDisp) envDisp.innerHTML = `
+                    <span class="text-emerald-400">${state.opSettings.weather || 'CLAIR'}</span> | 
+                    <span class="text-yellow-400">${state.opSettings.visibility || 'JOUR'}</span> | 
+                    <span class="text-red-400 animate-pulse">${state.opSettings.roe || 'TIR À VUE'}</span>
+                `;
+
                 document.getElementById('sl-squad-name').innerText = config.name;
                 document.getElementById('sl-freq').innerText = config.freq;
                 document.getElementById('sl-username').innerText = state.pseudo;
@@ -1076,9 +1193,11 @@
                         </div>
                     </div>`;
                 } else if(state.slTab === 'ESCOUADE') {
-                    container.innerHTML = `<div class="space-y-4"><div class="flex justify-between items-center mb-2 pb-2 border-b border-white/10"><h3 class="text-white font-bold uppercase text-xs tracking-widest">Tableau des Effectifs</h3><button onclick="window.app.addMember()" class="bg-[#66fcf1] hover:bg-white text-black text-[10px] font-bold px-3 py-1.5 uppercase flex items-center gap-1"><i data-lucide="user" class="w-3 h-3"></i> Ajouter</button></div><div class="space-y-2">${(squad.members||[]).map((m,i)=>`<div class="bg-white/5 p-2 border border-white/5 flex items-center gap-2 group hover:border-white/20 transition-colors"><span class="text-[10px] text-slate-500 font-mono w-4">${i+1}</span><select onchange="window.app.updateMember(${i}, 'grade', this.value)" class="bg-black text-[#66fcf1] text-xs p-1 border border-slate-700 outline-none w-20 uppercase font-bold">${GRADES.map(g=>`<option value="${g}" ${m.grade===g?'selected':''}>${g}</option>`).join('')}</select><input type="text" onchange="window.app.updateMember(${i}, 'name', this.value)" value="${m.name}" class="bg-transparent text-white text-sm p-1 border-b border-transparent focus:border-[#66fcf1] outline-none flex-1 w-full uppercase"><select onchange="window.app.updateMember(${i}, 'role', this.value)" class="bg-black text-slate-300 text-[10px] p-1 border border-slate-700 outline-none w-28 uppercase">${ROLES.map(r=>`<option value="${r}" ${m.role===r?'selected':''}>${r}</option>`).join('')}</select><button onclick="window.app.removeMember(${i})" class="text-red-900 group-hover:text-red-500 p-2 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>`).join('')}</div></div>`;
+                    container.innerHTML = `<div class="space-y-4"><div class="flex justify-between items-center mb-2 pb-2 border-b border-white/10"><h3 class="text-white font-bold uppercase text-xs tracking-widest">Tableau des Effectifs</h3><button onclick="window.app.addMember()" class="bg-[#66fcf1] hover:bg-white text-black text-[10px] font-bold px-3 py-1.5 uppercase flex items-center gap-1"><i data-lucide="user" class="w-3 h-3"></i> Ajouter</button></div><div class="space-y-2">${(squad.members||[]).map((m,i)=>`<div class="bg-white/5 p-2 border border-white/5 flex items-center gap-2 group hover:border-white/20 transition-colors"><span class="text-[10px] text-slate-500 font-mono w-4">${m.matricule || i+1}</span><select onchange="window.app.updateMember(${i}, 'grade', this.value)" class="bg-black text-[#66fcf1] text-xs p-1 border border-slate-700 outline-none w-20 uppercase font-bold">${GRADES.map(g=>`<option value="${g}" ${m.grade===g?'selected':''}>${g}</option>`).join('')}</select><input type="text" onchange="window.app.updateMember(${i}, 'name', this.value)" value="${m.name}" class="bg-transparent text-white text-sm p-1 border-b border-transparent focus:border-[#66fcf1] outline-none flex-1 w-full uppercase"><select onchange="window.app.updateMember(${i}, 'role', this.value)" class="bg-black text-slate-300 text-[10px] p-1 border border-slate-700 outline-none w-28 uppercase">${ROLES.map(r=>`<option value="${r}" ${m.role===r?'selected':''}>${r}</option>`).join('')}</select><button onclick="window.app.removeMember(${i})" class="text-red-900 group-hover:text-red-500 p-2 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>`).join('')}</div></div>`;
                 } else if(state.slTab === 'RAPPORT') {
+                    // GENERATION AUTOMATIQUE DU RAPPORT
                     const generatedReport = this.generateMilitaryReport(squad, "");
+                    
                     container.innerHTML = `<div class="flex flex-col h-full"><div class="flex-1 overflow-y-auto mb-4 bg-black/20 border border-white/5 p-4"><div class="space-y-4 border-l border-slate-700 pl-4 ml-2">${(squad.missionHistory||[]).map(e=>`<div class="relative"><div class="absolute -left-[21px] top-1.5 w-2 h-2 rounded-full bg-slate-700 border border-black"></div><div class="text-[10px] text-slate-500 font-mono mb-0.5">${new Date(e.time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div><div class="text-sm text-white font-bold uppercase tracking-wide">${e.content}</div></div>`).join('')}</div></div><div class="mt-auto pt-4 border-t border-white/10"><div class="flex gap-4 mb-4 justify-center"><label class="flex items-center gap-2 cursor-pointer p-4 border border-white/10 bg-black/40 hover:bg-white/5 transition-colors w-1/2 justify-center"><input type="radio" name="mission-status" value="SUCCESS" checked class="accent-emerald-500 w-6 h-6"><span class="text-emerald-500 font-black uppercase text-lg">SUCCÈS</span></label><label class="flex items-center gap-2 cursor-pointer p-4 border border-white/10 bg-black/40 hover:bg-white/5 transition-colors w-1/2 justify-center"><input type="radio" name="mission-status" value="FAILURE" class="accent-red-500 w-6 h-6"><span class="text-red-500 font-black uppercase text-lg">ÉCHEC</span></label></div><textarea id="final-report-input" class="w-full bg-black border border-slate-700 p-4 text-white text-xs mb-4 h-64 resize-none outline-none focus:border-red-500 uppercase font-mono touch-input leading-relaxed tracking-wide">${generatedReport}</textarea><button onclick="window.app.sendEndMission()" class="w-full bg-red-900/80 hover:bg-red-800 text-white py-6 font-bold uppercase tracking-[0.2em] flex items-center justify-center gap-2 border border-red-700 text-xl"><i data-lucide="save"></i> CLÔTURER</button></div></div>`;
                 } else if (state.slTab === 'LIAISON') {
                     container.innerHTML = `
@@ -1128,7 +1247,7 @@
             renderOptionGrid: function(key, options, current) {
                 return `<div class="grid grid-cols-2 gap-2">
                     ${options.map(opt => `
-                        <button onclick="window.app.setSitrepData('${key}', '${opt}')" class="p-4 border ${current === opt ? 'bg-white text-black font-bold border-white' : 'bg-black text-slate-400 border-slate-700 hover:border-white'} uppercase text-xs transition-colors">${opt}</button>
+                        <button onclick="window.app.setSitrepData('${key}', '${opt}')" class="p-4 border ${current === opt ? 'bg-white text-black font-bold border-white' : 'bg-black text-slate-400 border-slate-700 hover:border-white'} uppercase text-xs transition-colors touch-input flex items-center justify-center">${opt}</button>
                     `).join('')}
                 </div>`;
             }
