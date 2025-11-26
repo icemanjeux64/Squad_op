@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD NET // C2 SYSTEM</title>
+    <title>SQUAD NET // C2 SYSTEM V4</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -35,12 +35,12 @@
 
     <script type="text/babel" data-type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-        import { getFirestore, collection, doc, setDoc, onSnapshot, query, deleteDoc, getDoc, updateDoc, where, addDoc, increment } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+        import { getFirestore, collection, doc, setDoc, onSnapshot, query, deleteDoc, getDoc, updateDoc, where, addDoc, increment, getDocs } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
         import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 
         const { useState, useEffect, useRef } = React;
 
-        // --- CONFIGURATION FIREBASE (VOTRE PROJET) ---
+        // --- CONFIGURATION FIREBASE ---
         const firebaseConfig = {
             apiKey: "AIzaSyD3caoQgjcnsyyh-fCSFHwbErPpPvip8p4",
             authDomain: "squadnet-ops.firebaseapp.com",
@@ -59,14 +59,19 @@
             console.log("SQUAD NET: LIAISON ÉTABLIE.");
         } catch (e) { console.error("ERREUR LIAISON", e); }
 
-        const appId = 'squadnet-ops-v2';
+        const appId = 'squadnet-ops-v4'; // Version 4 (Structure CS)
 
         // --- CONSTANTES ---
         const SQUADS = ["ALPHA", "BRAVO", "CHARLIE", "DELTA", "ECHO", "FOXTROT", "GOLF", "HOTEL", "INDIA", "JULIETT", "KILO", "LIMA", "MIKE"];
         const THREATS = ["Infanterie", "Sniper", "Véhicule Léger", "Blindé", "Hélico", "Drone", "IED/Mine"];
         const VOLUMES = ["Isolé (1)", "Binôme (2)", "Équipe (4)", "Groupe (10+)", "Section (30+)"];
+        const ACTIVITIES = ["En station", "Patrouille", "Attaque", "Repli", "Fortification"];
+        const EQUIPMENT = ["Armement léger", "RPG/AT", "Mitrailleuse lourde", "Mortier", "Inconnu"];
         const DIRECTIONS = ["Nord", "Nord-Est", "Est", "Sud-Est", "Sud", "Sud-Ouest", "Ouest", "Nord-Ouest"];
         const DISTANCES = ["Contact (<50m)", "Proche (100m)", "Moyenne (300m)", "Loin (>600m)"];
+        const WEATHER = ["Clair", "Nuageux", "Pluie", "Brouillard", "Tempête"];
+        const VISIBILITY = ["Excellente", "Bonne", "Réduite", "Nulle (Nuit noire)"];
+        const TOPO_LINES = ["Ligne de Départ (LD)", "Ligne de Coordination", "Point de Contrôle (CP)", "Limite Avant (LOA)"];
         const MVT_TYPES = ["Début progression", "Halte de sécurité", "Arrivée sur Obj", "Repli défensif", "Rupture de contact"];
         const HEALTH_STATES = ["Blessé Léger", "Blessé Grave", "Inconscient", "DCD"];
         const RANKS = ["Recrue", "Soldat", "1cl", "Cpl", "Cch", "Cch1", "Sgt", "Sch", "Sch BM2", "Maj", "Slt", "Ltn", "Cne"];
@@ -103,14 +108,17 @@
                 Check: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>,
                 Lock: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
                 LogOut: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
-                Globe: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>,
+                Globe: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10 15.3 15.3 0 0 1 4-10z"/></svg>,
                 Upload: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
-                Download: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
+                Mountain: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m8 3 4 8 5-5 5 15H2L8 3z"/></svg>,
+                Cloud: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.5 19c0-1.7-1.3-3-3-3h-1.1c-.3-2.3-2.2-4-4.4-4-2.2 0-4.1 1.7-4.4 4H4c-1.7 0-3 1.3-3 3 0 1.7 1.3 3 3 3h13.5c1.7 0 3-1.3 3-3z"/></svg>,
+                ChevronDown: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
             };
             return <span className={className}>{icons[name] || null}</span>;
         };
 
-        // --- COMPOSANTS UI GENERIC ---
+        // --- UI KIT ---
         const TacticalCard = ({ children, title, className = "", borderColor = "border-emerald-900" }) => (
             <div className={`relative bg-black border ${borderColor}/50 ${className}`}>
                 <div className={`absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 ${borderColor.replace('-900', '-500')}`}></div>
@@ -138,7 +146,8 @@
                 action: "bg-slate-900 hover:bg-emerald-900/30 text-emerald-500 border border-emerald-800 hover:border-emerald-400",
                 modal: "bg-black hover:bg-emerald-900/50 text-emerald-300 border border-emerald-800 w-full text-xs py-3",
                 locked: "bg-black border border-red-900/50 text-red-900 cursor-not-allowed",
-                hq: "bg-blue-900/20 hover:bg-blue-800/40 text-blue-400 border border-blue-600 shadow-[0_0_10px_rgba(59,130,246,0.1)]"
+                hq: "bg-blue-900/20 hover:bg-blue-800/40 text-blue-400 border border-blue-600 shadow-[0_0_10px_rgba(59,130,246,0.1)]",
+                section: "bg-amber-900/20 hover:bg-amber-800/40 text-amber-400 border border-amber-600 shadow-[0_0_10px_rgba(245,158,11,0.1)]"
             };
             return (
                 <button onClick={onClick} disabled={disabled} className={`relative font-mono uppercase tracking-widest text-xs font-bold py-3 px-4 transition-all duration-75 flex items-center justify-center gap-2 active:translate-y-px disabled:opacity-40 disabled:cursor-not-allowed overflow-hidden group ${variants[variant]} ${className}`}>
@@ -166,9 +175,7 @@
             );
         };
 
-        // --- MODALS & DASHBOARDS ---
-
-        // 1. SitrepModal (Celui qui manquait)
+        // --- MODALS ---
         const SitrepModal = ({ onClose, type, onConfirm, roster }) => {
             const [step, setStep] = useState(0);
             const [data, setData] = useState({});
@@ -178,11 +185,19 @@
             if (type === 'DIVERS') return (<div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 font-mono"><div className="bg-slate-950 border-2 border-emerald-600 w-full max-w-sm p-4 relative z-10"><h4 className="text-emerald-500 font-mono text-center mb-2 border-b border-emerald-900 pb-2 tracking-widest">OBSERVATION</h4><textarea className="w-full h-32 bg-black border border-emerald-800 text-emerald-400 p-3 font-mono text-sm focus:border-emerald-500 focus:outline-none resize-none mb-4" placeholder="EX: RENS, SUSPECTS..." value={customText} onChange={(e) => setCustomText(e.target.value)} autoFocus /><TacticalButton variant="primary" className="w-full" onClick={() => onConfirm({ details: customText || "RAS" })}><Icon name="Check" size={18} /> VALIDER</TacticalButton><button onClick={onClose} className="absolute top-2 right-2 text-emerald-800"><Icon name="X" size={24}/></button></div></div>);
 
             const renderContent = () => {
+                if (type === 'ENV') {
+                    if(step===0) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">CATÉGORIE</h4><div className="grid grid-cols-1 gap-2"><TacticalButton variant="modal" onClick={() => handleSelection('category', 'MÉTÉO')}>MÉTÉO</TacticalButton><TacticalButton variant="modal" onClick={() => handleSelection('category', 'VISIBILITÉ')}>VISIBILITÉ</TacticalButton><TacticalButton variant="modal" onClick={() => handleSelection('category', 'TOPOGRAPHIE')}>TOPOGRAPHIE (Ligne/Point)</TacticalButton></div></>);
+                    if(data.category === 'MÉTÉO') return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">CONDITION</h4><div className="grid grid-cols-1 gap-2">{WEATHER.map(w => <TacticalButton key={w} variant="modal" onClick={() => onConfirm({ ...data, detail: w })}>{w}</TacticalButton>)}</div></>);
+                    if(data.category === 'VISIBILITÉ') return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">ÉTAT</h4><div className="grid grid-cols-1 gap-2">{VISIBILITY.map(v => <TacticalButton key={v} variant="modal" onClick={() => onConfirm({ ...data, detail: v })}>{v}</TacticalButton>)}</div></>);
+                    if(data.category === 'TOPOGRAPHIE') return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">FRANCHISSEMENT</h4><div className="grid grid-cols-1 gap-2">{TOPO_LINES.map(l => <TacticalButton key={l} variant="modal" onClick={() => onConfirm({ ...data, detail: l })}>{l}</TacticalButton>)}</div></>);
+                }
                 if (type === 'CONTACT' || type === 'FEU') {
                     if (step === 0) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">NATURE</h4><div className="grid grid-cols-2 gap-2">{THREATS.map(t => <TacticalButton key={t} variant="modal" onClick={() => handleSelection('menace', t)}>{t}</TacticalButton>)}</div></>);
                     if (step === 1) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">VOLUME</h4><div className="grid grid-cols-2 gap-2">{VOLUMES.map(v => <TacticalButton key={v} variant="modal" onClick={() => handleSelection('volume', v)}>{v}</TacticalButton>)}</div></>);
-                    if (step === 2) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">AZIMUT</h4><div className="grid grid-cols-3 gap-2">{DIRECTIONS.map(d => <TacticalButton key={d} variant="modal" onClick={() => handleSelection('direction', d)}>{d}</TacticalButton>)}</div></>);
-                    if (step === 3) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">DISTANCE</h4><div className="grid grid-cols-1 gap-2">{DISTANCES.map(d => <TacticalButton key={d} variant="modal" onClick={() => onConfirm({ ...data, distance: d })}>{d}</TacticalButton>)}</div></>);
+                    if (step === 2) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">ACTIVITÉ</h4><div className="grid grid-cols-1 gap-2">{ACTIVITIES.map(a => <TacticalButton key={a} variant="modal" onClick={() => handleSelection('activity', a)}>{a}</TacticalButton>)}</div></>);
+                    if (step === 3) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">ÉQUIPEMENT</h4><div className="grid grid-cols-1 gap-2">{EQUIPMENT.map(e => <TacticalButton key={e} variant="modal" onClick={() => handleSelection('equipment', e)}>{e}</TacticalButton>)}</div></>);
+                    if (step === 4) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">AZIMUT</h4><div className="grid grid-cols-3 gap-2">{DIRECTIONS.map(d => <TacticalButton key={d} variant="modal" onClick={() => handleSelection('direction', d)}>{d}</TacticalButton>)}</div></>);
+                    if (step === 5) return (<><h4 className="text-emerald-500 font-mono text-center mb-4 border-b border-emerald-900 pb-2">DISTANCE</h4><div className="grid grid-cols-1 gap-2">{DISTANCES.map(d => <TacticalButton key={d} variant="modal" onClick={() => onConfirm({ ...data, distance: d })}>{d}</TacticalButton>)}</div></>);
                 }
                 if (type === 'SANTE') {
                     if (step === 0) return (<><h4 className="text-red-500 font-mono text-center mb-4 border-b border-red-900 pb-2">QUI ?</h4><div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">{roster.map(s => <TacticalButton key={s.id} variant="modal" className="border-red-900 text-red-400 hover:bg-red-950" onClick={() => handleSelection('soldatData', { id: s.id, name: `${s.rank} ${s.name}` })}>{s.rank} {s.name}</TacticalButton>)}</div></>);
@@ -195,7 +210,6 @@
             return (<div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 font-mono"><div className="bg-slate-950 border-2 border-emerald-600 w-full max-w-sm p-0 shadow-[0_0_50px_rgba(16,185,129,0.2)] relative z-10"><div className="bg-emerald-950/50 border-b border-emerald-600 p-3 flex justify-between items-center"><div className="flex items-center gap-2"><div className="w-2 h-2 bg-emerald-500 animate-pulse"></div><h3 className="text-emerald-400 font-bold text-lg tracking-widest">SITREP // {type}</h3></div><button onClick={onClose} className="text-emerald-800 hover:text-red-500"><Icon name="X" size={24}/></button></div><div className="p-6">{renderContent()}</div></div></div>);
         };
 
-        // 2. ManageSoldierModal
         const ManageSoldierModal = ({ onClose, roster, onDecoSauvage, onPassation }) => {
             return (
                 <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 font-mono">
@@ -221,7 +235,9 @@
             );
         };
 
-        // 3. HQ Dashboard
+        // --- DASHBOARDS ---
+        
+        // DASHBOARD ÉTAT-MAJOR (HQ)
         const HQDashboard = ({ onLogout, user }) => {
             const [squadsData, setSquadsData] = useState([]);
             const [requests, setRequests] = useState([]);
@@ -263,14 +279,20 @@
                     <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {squadsData.map(squad => {
-                                const borderColor = squad.lastLog?.type === 'SANTE' ? 'border-red-900' : 'border-blue-900';
+                                if(squad.isHQ) return null;
+                                // Si c'est un Chef de Section, on l'affiche différemment ? Pour l'instant, on affiche tout le monde pareil pour HQ
+                                const borderColor = squad.isSection ? 'border-amber-600' : (squad.lastLog?.type === 'SANTE' ? 'border-red-900' : 'border-blue-900');
+                                const titleColor = squad.isSection ? 'text-amber-500' : 'text-blue-500';
                                 const totalPax = (squad.healthSummary?.active||0)+(squad.healthSummary?.wia||0)+(squad.healthSummary?.kia||0);
                                 const hasReport = squad.reportSubmitted && squad.finalReport;
                                 return (
-                                    <TacticalCard key={squad.id} title={`GROUPE ${squad.id}`} className={`h-full ${borderColor}`} borderColor={borderColor}>
+                                    <TacticalCard key={squad.id} title={squad.isSection ? `SECTION ${squad.id}` : `GROUPE ${squad.id}`} className={`h-full ${borderColor}`} borderColor={borderColor}>
                                         <div className="flex flex-col h-full gap-3">
-                                            <div className="flex justify-between items-start border-b border-blue-900/30 pb-2"><div><div className="text-xs text-blue-700 uppercase tracking-widest">CHEF DE GROUPE</div><div className="text-blue-300 font-bold">{squad.leaderRank} {squad.leaderName}</div></div><div className="text-right"><span className={`text-xs px-2 py-1 border ${squad.healthSummary?.kia > 0 ? 'border-red-800 text-red-500 bg-red-950/20' : squad.healthSummary?.wia > 0 ? 'border-amber-800 text-amber-500' : 'border-blue-800 text-blue-500'}`}>{getStatusText(squad)}</span><div className="text-[10px] text-blue-600 font-mono mt-1 tracking-wider">{totalPax}/10 PAX</div></div></div>
+                                            <div className="flex justify-between items-start border-b border-blue-900/30 pb-2"><div><div className="text-xs text-blue-700 uppercase tracking-widest">{squad.isSection ? "CHEF DE SECTION" : "CHEF DE GROUPE"}</div><div className={`font-bold ${titleColor}`}>{squad.leaderRank} {squad.leaderName}</div></div><div className="text-right"><span className={`text-xs px-2 py-1 border ${squad.healthSummary?.kia > 0 ? 'border-red-800 text-red-500 bg-red-950/20' : squad.healthSummary?.wia > 0 ? 'border-amber-800 text-amber-500' : 'border-blue-800 text-blue-500'}`}>{getStatusText(squad)}</span><div className="text-[10px] text-blue-600 font-mono mt-1 tracking-wider">{squad.isSection ? "SECTION" : `${totalPax}/10 PAX`}</div></div></div>
                                             <div className="space-y-2 flex-1"><div><div className="text-[10px] text-blue-800 uppercase">MISSION</div><div className="text-xs text-blue-400 truncate">{squad.mission?.objective || "ATTENTE"}</div></div><div><div className="text-[10px] text-blue-800 uppercase">POS</div><div className="text-xs text-blue-400">{squad.mission?.location || "N/A"}</div></div></div>
+                                            {squad.isSection && squad.subordinates && (
+                                                <div className="text-[10px] text-amber-600 border-t border-blue-900/30 pt-1">SOUS ORDRES: {squad.subordinates.join(', ')}</div>
+                                            )}
                                             <div className="mt-2 bg-blue-950/20 border border-blue-900/50 p-2 min-h-[60px]"><div className="text-[9px] text-blue-600 uppercase mb-1 flex justify-between"><span>DERNIER SITREP</span><span>{squad.lastLog?.time || "--:--"}</span></div><div className={`text-xs font-mono ${squad.lastLog?.type === 'CONTACT' || squad.lastLog?.type === 'FEU' ? 'text-amber-400' : squad.lastLog?.type === 'SANTE' ? 'text-red-400' : 'text-blue-300'}`}>{squad.lastLog ? `[${squad.lastLog.type}] ${squad.lastLog.message}` : "SILENCE RADIO"}</div></div>
                                             {hasReport && (<div className="mt-2"><TacticalButton variant="hq" className="w-full" onClick={() => downloadTxtFile(`RETEX_${squad.id}.txt`, squad.finalReport)}><Icon name="Download" size={16} /> TÉLÉCHARGER RETEX</TacticalButton></div>)}
                                             <TacticalButton variant="danger" className="w-full mt-2 py-2 text-[10px]" onClick={() => dissolveSquad(squad.id)}><Icon name="Trash2" size={14}/> DISSOUDRE UNITÉ</TacticalButton>
@@ -285,24 +307,119 @@
             );
         };
 
+        // --- DASHBOARD SECTION LEADER ---
+        const SectionDashboard = ({ onLogout, user, squadData }) => {
+            const [allSquads, setAllSquads] = useState([]);
+            const [mySquads, setMySquads] = useState([]);
+
+            useEffect(() => {
+                if (!db) return;
+                const qSquads = query(collection(db, 'artifacts', appId, 'public', 'data', 'active_squads'));
+                const subSquads = onSnapshot(qSquads, (snapshot) => {
+                    const sq = []; 
+                    snapshot.forEach(doc => sq.push({ id: doc.id, ...doc.data() }));
+                    setAllSquads(sq);
+                    // Filtrer pour ne garder que les squads sous commandement
+                    if (squadData.subordinates) {
+                        setMySquads(sq.filter(s => squadData.subordinates.includes(s.id)));
+                    }
+                });
+                return () => subSquads();
+            }, [squadData.subordinates]);
+
+            // Fonction pour envoyer un rapport consolidé au QG (similaire à MainApp mais pour la section)
+            const sendSectionReport = async () => {
+                 // Logique simplifiée : On update juste le doc de la section avec un message
+                 try {
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'active_squads', squadData.name), {
+                        lastLog: { type: 'INFO', message: 'RAPPORT SECTION TRANSMIS AU QG', time: new Date().toLocaleTimeString() },
+                        lastUpdate: Date.now()
+                    });
+                    alert("CR SECTION ENVOYÉ");
+                 } catch(e) {}
+            };
+
+            return (
+                <div className="min-h-screen bg-black text-amber-500 font-mono p-4">
+                    {/* Background Grid Amber for Section */}
+                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#78350f_1px,transparent_1px),linear-gradient(to_bottom,#78350f_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-20 pointer-events-none z-0"></div>
+                     <header className="relative z-10 flex justify-between items-center border-b-2 border-amber-900 p-2 sm:pb-4 sm:mb-6 bg-black/80 backdrop-blur gap-2">
+                        <div className="flex items-center gap-2 sm:gap-3 overflow-hidden"><div className="p-1 sm:p-2 border border-amber-800 bg-amber-950/30 shrink-0"><Icon name="Target" className="text-amber-500" size={24}/></div><div className="min-w-0"><h1 className="text-sm sm:text-2xl font-black uppercase tracking-[0.15em] text-amber-500 text-glow truncate">SECTION {squadData.name}</h1><div className="text-[8px] sm:text-xs text-amber-700 font-mono uppercase tracking-widest truncate">PC TACTIQUE</div></div></div>
+                        <div className="flex items-center gap-2 sm:gap-4 shrink-0"><HeaderClock className="flex text-amber-500" textClass="text-amber-500 text-xs sm:text-lg" subTextClass="text-amber-800 text-[8px] sm:text-[9px]" /><button onClick={onLogout} className="text-amber-800 hover:text-red-500 border border-amber-900 p-1 sm:p-2 hover:bg-red-950/20"><Icon name="LogOut" size={20} /></button></div>
+                    </header>
+
+                    <div className="relative z-10 mb-4">
+                        <TacticalButton variant="section" className="w-full py-4" onClick={sendSectionReport}><Icon name="Upload" size={18}/> TRANSMETTRE SITREP SECTION AU QG</TacticalButton>
+                    </div>
+
+                    <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {mySquads.length === 0 && <div className="col-span-full text-center py-10 text-amber-900">AUCUNE UNITÉ SUBORDONNÉE EN LIGNE</div>}
+                        {mySquads.map(squad => {
+                             const borderColor = 'border-amber-900';
+                             return (
+                                <TacticalCard key={squad.id} title={`GROUPE ${squad.id}`} className={`h-full ${borderColor}`} borderColor={borderColor}>
+                                     <div className="flex flex-col h-full gap-3">
+                                        <div className="flex justify-between items-start border-b border-amber-900/30 pb-2"><div><div className="text-xs text-amber-700 uppercase tracking-widest">CDG</div><div className="text-amber-300 font-bold">{squad.leaderRank} {squad.leaderName}</div></div></div>
+                                        <div className="mt-2 bg-amber-950/20 border border-amber-900/50 p-2 min-h-[60px]"><div className="text-[9px] text-amber-600 uppercase mb-1 flex justify-between"><span>DERNIER SITREP</span><span>{squad.lastLog?.time || "--:--"}</span></div><div className="text-xs font-mono text-amber-300">{squad.lastLog ? `[${squad.lastLog.type}] ${squad.lastLog.message}` : "SILENCE RADIO"}</div></div>
+                                     </div>
+                                </TacticalCard>
+                             );
+                        })}
+                    </div>
+                </div>
+            );
+        };
+
         // --- SQUAD SELECTOR ---
         const SquadSelector = ({ onSelectSquad, user, onHQRequest }) => {
             const [takenSquads, setTakenSquads] = useState({});
-            const [joiningSquad, setJoiningSquad] = useState(null);
+            const [joiningSquad, setJoiningSquad] = useState(null); // 'HQ', 'SECTION' or Squad Name
             const [leaderRank, setLeaderRank] = useState("Sgt");
             const [leaderName, setLeaderName] = useState("");
+            const [hqOnline, setHqOnline] = useState(false);
+            const [selectedSubordinates, setSelectedSubordinates] = useState([]); // For Section Leader
 
             useEffect(() => {
                 if (!user || !db) return;
                 const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'active_squads'));
-                const unsubscribe = onSnapshot(q, (snapshot) => { const squads = {}; snapshot.forEach(doc => { squads[doc.id] = doc.data().userId; }); setTakenSquads(squads); }, (e) => console.log("Offline Mode"));
+                const unsubscribe = onSnapshot(q, (snapshot) => { 
+                    const squads = {}; 
+                    let hqFound = false;
+                    snapshot.forEach(doc => { 
+                        const d = doc.data();
+                        squads[doc.id] = d.userId;
+                        if(d.isHQ) hqFound = true;
+                    }); 
+                    setTakenSquads(squads); 
+                    setHqOnline(hqFound);
+                }, (e) => console.log("Offline Mode"));
                 return () => unsubscribe();
             }, [user]);
 
+            const toggleSubordinate = (squad) => {
+                if (selectedSubordinates.includes(squad)) setSelectedSubordinates(selectedSubordinates.filter(s => s !== squad));
+                else setSelectedSubordinates([...selectedSubordinates, squad]);
+            };
+
             const confirmJoin = async () => {
                 if (!leaderName.trim()) { alert("ID REQUIS"); return; }
-                if (joiningSquad === 'HQ') { onHQRequest(leaderRank, leaderName); } 
-                else {
+                
+                if (joiningSquad === 'HQ') {
+                    onHQRequest(leaderRank, leaderName);
+                } else if (joiningSquad === 'SECTION') {
+                    if(selectedSubordinates.length === 0) { alert("SÉLECTIONNEZ AU MOINS UNE UNITÉ"); return; }
+                    // Create Section Leader doc
+                    const sectionId = `SECTION_${leaderName.toUpperCase().replace(/\s/g, '_')}`; // Unique ID based on name or random
+                    if (db) {
+                        try {
+                             await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'active_squads', sectionId), { 
+                                userId: user.uid, timestamp: Date.now(), leaderRank, leaderName, isSection: true, subordinates: selectedSubordinates, name: sectionId
+                            });
+                        } catch(e) {}
+                    }
+                    onSelectSquad({ name: sectionId, leaderRank, leaderName, isHQ: false, isSection: true, subordinates: selectedSubordinates });
+
+                } else {
                     if (db) {
                         try {
                             await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'active_squads', joiningSquad), { userId: user.uid, timestamp: Date.now(), leaderRank, leaderName });
@@ -314,12 +431,38 @@
             };
 
             if (joiningSquad) {
+                const isSectionSetup = joiningSquad === 'SECTION';
+                const themeColor = joiningSquad === 'HQ' ? 'blue' : (isSectionSetup ? 'amber' : 'emerald');
+
                 return (
                     <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4 font-mono relative overflow-hidden">
-                        <div className={`bg-slate-950 border-2 ${joiningSquad === 'HQ' ? 'border-blue-500' : 'border-emerald-500'} p-1 max-w-sm w-full relative z-10`}>
-                            <div className={`border ${joiningSquad === 'HQ' ? 'border-blue-900/50' : 'border-emerald-900/50'} p-6`}>
-                                <h2 className={`text-xl font-black ${joiningSquad === 'HQ' ? 'text-blue-500' : 'text-emerald-500'} mb-6 text-center tracking-[0.3em] border-b-2 border-emerald-900 pb-4`}>LOGIN</h2>
-                                <div className="space-y-6"><div className="text-center"><div className="text-xs uppercase mb-1 tracking-widest text-gray-500">UNITÉ</div><div className="text-2xl font-bold text-white tracking-widest">{joiningSquad === 'HQ' ? 'ÉTAT-MAJOR' : joiningSquad}</div></div><div className="space-y-4"><div><label className="block text-gray-500 text-[10px] uppercase font-bold mb-1">GRADE</label><select className="w-full bg-black border border-gray-800 text-white p-3 uppercase" value={leaderRank} onChange={(e) => setLeaderRank(e.target.value)}>{RANKS.map(r => <option key={r} value={r}>{r}</option>)}</select></div><div><label className="block text-gray-500 text-[10px] uppercase font-bold mb-1">NOM</label><input className="w-full bg-black border border-gray-800 text-white p-3 uppercase" placeholder="EX: PREDATOR" value={leaderName} onChange={(e) => setLeaderName(e.target.value)} autoFocus /></div></div><div className="flex gap-3 mt-8 pt-4 border-t border-gray-900"><button onClick={() => setJoiningSquad(null)} className="flex-1 py-3 border border-red-900/50 text-red-600 font-bold text-xs">ANNULER</button><button onClick={confirmJoin} className={`flex-1 py-3 ${joiningSquad === 'HQ' ? 'bg-blue-700 hover:bg-blue-500' : 'bg-emerald-700 hover:bg-emerald-500'} text-black font-bold text-xs`}>CONNEXION</button></div></div>
+                        <div className={`bg-slate-950 border-2 border-${themeColor}-500 p-1 max-w-sm w-full relative z-10`}>
+                            <div className={`border border-${themeColor}-900/50 p-6`}>
+                                <h2 className={`text-xl font-black text-${themeColor}-500 mb-6 text-center tracking-[0.3em] border-b-2 border-${themeColor}-900 pb-4`}>LOGIN</h2>
+                                <div className="space-y-6">
+                                    <div className="text-center"><div className={`text-xs uppercase mb-1 tracking-widest text-${themeColor}-800`}>UNITÉ</div><div className="text-2xl font-bold text-white tracking-widest">{joiningSquad === 'HQ' ? 'ÉTAT-MAJOR' : (isSectionSetup ? 'CHEF DE SECTION' : joiningSquad)}</div></div>
+                                    <div className="space-y-4">
+                                        <div><label className={`block text-${themeColor}-600 text-[10px] uppercase font-bold mb-1`}>GRADE</label><select className={`w-full bg-black border border-${themeColor}-800 text-white p-3 uppercase`} value={leaderRank} onChange={(e) => setLeaderRank(e.target.value)}>{RANKS.map(r => <option key={r} value={r}>{r}</option>)}</select></div>
+                                        <div><label className={`block text-${themeColor}-600 text-[10px] uppercase font-bold mb-1`}>NOM</label><input className={`w-full bg-black border border-${themeColor}-800 text-white p-3 uppercase`} placeholder="EX: PREDATOR" value={leaderName} onChange={(e) => setLeaderName(e.target.value)} autoFocus /></div>
+                                        
+                                        {isSectionSetup && (
+                                            <div className="border-t border-amber-900 pt-4">
+                                                <label className="block text-amber-600 text-[10px] uppercase font-bold mb-2">UNITÉS SOUS ORDRES</label>
+                                                <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                                                    {SQUADS.map(s => (
+                                                        <button key={s} onClick={() => toggleSubordinate(s)} className={`text-xs border p-1 ${selectedSubordinates.includes(s) ? 'bg-amber-900/40 border-amber-500 text-amber-400' : 'border-amber-900/30 text-gray-500'}`}>
+                                                            {s}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className={`flex gap-3 mt-8 pt-4 border-t border-${themeColor}-900`}>
+                                        <button onClick={() => setJoiningSquad(null)} className="flex-1 py-3 border border-red-900/50 text-red-600 font-bold text-xs">ANNULER</button>
+                                        <button onClick={confirmJoin} className={`flex-1 py-3 bg-${themeColor}-700 text-black font-bold text-xs hover:bg-${themeColor}-500`}>CONNEXION</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -328,7 +471,22 @@
             return (
                 <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4 font-mono relative">
                     <div className="absolute inset-0 bg-[linear-gradient(to_right,#064e3b_1px,transparent_1px),linear-gradient(to_bottom,#064e3b_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-20 pointer-events-none"></div>
-                    <div className="max-w-md w-full space-y-8 relative z-10"><div className="text-center border-b-2 border-emerald-800 pb-6"><img src="Logo.png" alt="Logo" className="h-20 mx-auto mb-4 opacity-80 drop-shadow-[0_0_10px_rgba(16,185,129,0.6)]" /><h1 className="text-4xl font-black text-emerald-500 tracking-[0.2em] mb-2" style={{textShadow:'0 0 20px rgba(16,185,129,0.5)'}}>SQUAD NET</h1><p className="text-emerald-800 font-bold text-xs tracking-[0.5em] uppercase">Système de Commandement</p></div><div className="flex justify-center mb-6"><button onClick={() => setJoiningSquad('HQ')} className="w-full py-3 bg-blue-900/20 border border-blue-600 text-blue-400 hover:bg-blue-800/40 hover:text-blue-200 font-bold tracking-widest text-sm shadow-[0_0_15px_rgba(37,99,235,0.3)] flex items-center justify-center gap-2"><Icon name="Globe" size={18} /> ACCÈS ÉTAT-MAJOR</button></div><div className="grid grid-cols-2 gap-4">{SQUADS.map(squad => { const isTaken = takenSquads[squad] && takenSquads[squad] !== user?.uid; const isMine = takenSquads[squad] === user?.uid; return (<button key={squad} onClick={() => { if(!isTaken) setJoiningSquad(squad); }} disabled={isTaken} className={`relative p-4 border-2 font-mono font-bold text-lg transition-all group overflow-hidden ${isTaken ? 'border-red-900/30 bg-red-950/10 text-red-900 cursor-not-allowed opacity-50' : isMine ? 'border-emerald-400 bg-emerald-900/20 text-emerald-400' : 'border-emerald-900 bg-black text-emerald-700 hover:border-emerald-500 hover:text-emerald-400'}`}><div className={`absolute top-0 left-0 w-1 h-1 ${isTaken ? 'bg-red-900' : 'bg-emerald-500'}`}></div><div className={`absolute bottom-0 right-0 w-1 h-1 ${isTaken ? 'bg-red-900' : 'bg-emerald-500'}`}></div><div className="flex items-center justify-between relative z-10"><span className="tracking-widest">{squad}</span>{isTaken && <Icon name="Lock" size={14}/>}{isMine && <Icon name="Check" size={14}/>}</div></button>); })}</div></div>
+                    <div className="max-w-md w-full space-y-8 relative z-10"><div className="text-center border-b-2 border-emerald-800 pb-6"><img src="Logo.png" alt="Logo" className="h-20 mx-auto mb-4 opacity-80 drop-shadow-[0_0_10px_rgba(16,185,129,0.6)]" /><h1 className="text-4xl font-black text-emerald-500 tracking-[0.2em] mb-2" style={{textShadow:'0 0 20px rgba(16,185,129,0.5)'}}>SQUAD NET</h1><p className="text-emerald-800 font-bold text-xs tracking-[0.5em] uppercase">Système de Commandement</p></div>
+                    
+                    <div className="flex flex-col gap-3 mb-6">
+                        <button onClick={() => setJoiningSquad('HQ')} className={`w-full py-3 border font-bold tracking-widest text-sm shadow-[0_0_15px_rgba(37,99,235,0.3)] flex items-center justify-center gap-2 ${hqOnline ? 'bg-amber-900/20 border-amber-600 text-amber-500 hover:bg-amber-800/40' : 'bg-blue-900/20 border-blue-600 text-blue-400 hover:bg-blue-800/40'}`}>
+                            <img src="Logo.png" className="h-5 w-5 object-contain" alt="HQ" /> {hqOnline ? "DEMANDE ACCÈS ÉTAT-MAJOR (QG ACTIF)" : "PRENDRE LE COMMANDEMENT (QG LIBRE)"}
+                        </button>
+                        
+                        {/* BOUTON CHEF DE SECTION - APPARAIT SI QG ACTIF */}
+                        {hqOnline && (
+                            <button onClick={() => setJoiningSquad('SECTION')} className="w-full py-3 bg-amber-900/20 border border-amber-600 text-amber-400 hover:bg-amber-800/40 font-bold tracking-widest text-sm shadow-[0_0_15px_rgba(245,158,11,0.3)] flex items-center justify-center gap-2">
+                                <Icon name="Target" size={18} /> PRISE DE POSTE CHEF DE SECTION
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">{SQUADS.map(squad => { const isTaken = takenSquads[squad] && takenSquads[squad] !== user?.uid; const isMine = takenSquads[squad] === user?.uid; return (<button key={squad} onClick={() => { if(!isTaken) setJoiningSquad(squad); }} disabled={isTaken} className={`relative p-4 border-2 font-mono font-bold text-lg transition-all group overflow-hidden ${isTaken ? 'border-red-900/30 bg-red-950/10 text-red-900 cursor-not-allowed opacity-50' : isMine ? 'border-emerald-400 bg-emerald-900/20 text-emerald-400' : 'border-emerald-900 bg-black text-emerald-700 hover:border-emerald-500 hover:text-emerald-400'}`}><div className={`absolute top-0 left-0 w-1 h-1 ${isTaken ? 'bg-red-900' : 'bg-emerald-500'}`}></div><div className={`absolute bottom-0 right-0 w-1 h-1 ${isTaken ? 'bg-red-900' : 'bg-emerald-500'}`}></div><div className="flex items-center justify-between relative z-10"><span className="tracking-widest">{squad}</span>{isTaken && <Icon name="Lock" size={14}/>}{isMine && <Icon name="Check" size={14}/>}</div></button>); })}</div></div>
                 </div>
             );
         };
@@ -345,7 +503,11 @@
             const [modalOpen, setModalOpen] = useState(false);
             const [manageModalOpen, setManageModalOpen] = useState(false);
             const [currentActionType, setCurrentActionType] = useState(null);
+            
             const [newSoldier, setNewSoldier] = useState({ name: "", rank: "Soldat", role: "GV" });
+            const [objectives, setObjectives] = useStickyState([], `${squadPrefix}_objs`);
+            const [newObjText, setNewObjText] = useState("");
+            const [debrief, setDebrief] = useStickyState({ morale: "Moyen", plus: "", minus: "", nominations: "" }, `${squadPrefix}_debrief`);
 
             // --- ECOUTEUR DE SURVIE (ANTI-DISSOLUTION) ---
             useEffect(() => {
@@ -368,11 +530,60 @@
 
             useEffect(() => { let i; if (missionActive) i = setInterval(() => setMissionTime(p => p + 1), 1000); return () => clearInterval(i); }, [missionActive]);
             const formatTime = (s) => `${Math.floor(s/3600).toString().padStart(2,'0')}:${Math.floor((s%3600)/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
+            
             const handleDecoSauvage = async (soldier) => { if(confirm(`SIGNALER DÉCO SAUVAGE: ${soldier.name} ?`)) { setRoster(roster.filter(s => s.id !== soldier.id)); setManageModalOpen(false); try { await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'history_logs'), { type: "DECO_SAUVAGE", message: `DÉCO SAUVAGE: ${soldier.rank} ${soldier.name} (Signalé par ${squadData.name})`, timestamp: Date.now() }); } catch(e){} } };
             const handlePassation = async (soldier) => { if(confirm(`TRANSFÉRER COMMANDEMENT À ${soldier.name} ?`)) { const oldLeader = roster.find(s => s.role.includes("CDG")); if (!oldLeader) return; const newRoster = roster.map(s => { if(s.id === soldier.id) return { ...s, role: "CDG", rank: soldier.rank }; if(s.id === oldLeader.id) return { ...s, role: "GV" }; return s; }); setRoster(newRoster); setManageModalOpen(false); try { await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'history_logs'), { type: "PASSATION", message: `PASSATION DE CDG ${squadData.name}: ${oldLeader.name} -> ${soldier.name}`, timestamp: Date.now() }); await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'active_squads', squadData.name), { leaderName: soldier.name, leaderRank: soldier.rank }); } catch(e){} } };
-            const addSmartLog = (type, data) => { const t = new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}); let m = ""; const v = (val) => val ? (val.includes("Isolé")?"1 Pax":val.includes("Binôme")?"2 Pax":val.includes("Équipe")?"4 Pax":val.includes("Groupe")?"10+":val) : "?"; if (type === 'CONTACT') m = `VISUEL: ${v(data.volume)} ${data.menace} -> ${data.direction}`; else if (type === 'FEU') m = `ENGAGEMENT: ${v(data.volume)} ${data.menace} -> ${data.direction}`; else if (type === 'SANTE') m = `ALERTE MED: ${data.soldatData.name} -> ${data.etat}`; else if (type === 'MVT') m = `MVT: ${data.typeMvt}`; else if (type === 'DIVERS') m = `RENS: ${data.details}`; else m = data.details || ""; setLogs(prev => [{ id: Date.now(), time: t, missionTime: formatTime(missionTime), type, raw: data, message: m }, ...prev]); if (type === 'SANTE' && data.soldatData?.id) { let st = 'BLESSÉ'; if(data.etat === 'DCD') st = 'DCD'; else if(data.etat === 'Inconscient') st = 'INCONSCIENT'; setRoster(prev => prev.map(s => s.id === data.soldatData.id ? { ...s, status: st } : s)); } };
-            const handleActionClick = (type) => { if (!missionActive && type !== 'DIVERS') { alert("MISSION NON DÉBUTÉE"); return; } if (['CONTACT', 'FEU', 'SANTE', 'MVT', 'DIVERS'].includes(type)) { setCurrentActionType(type); setModalOpen(true); } else { if (type === 'RAS') addSmartLog(type, { details: "R.A.S." }); if (type === 'APPUI') addSmartLog(type, { details: "Poste d'observation." }); if (type === 'TRANS') addSmartLog(type, { details: "Check radio." }); } };
-            const generateNarrativeAAR = () => { const today = new Date().toLocaleDateString('fr-FR'); const currentLeader = roster.find(s => s.role.includes("CDG")); let txt = `MINISTÈRE DES ARMÉES\nOBJET : COMPTE-RENDU D'OPÉRATION "${missionData.name}"\nUNITÉ : GROUPE ${squadData.name}\nDATE : ${today}\n\nMon Capitaine,\n\nJ'ai l'honneur de vous rendre compte de la mission effectuée ce jour par le groupe ${squadData.name} dans le secteur ${missionData.location}. L'objectif était de : ${missionData.objective}.\n\nDÉROULEMENT DES FAITS :\n`; const fmtVol = (v) => v ? (v.includes("Isolé")?"un individu isolé":v.includes("Binôme")?"un binôme":v.includes("Équipe")?"une équipe":v.includes("Groupe")?"un groupe de combat":v.includes("Section")?"une section":v) : "un volume indéterminé"; const fmtMen = (m) => m ? (m==="Infanterie"?"d'infanterie":m==="Sniper"?"de tireurs d'élite":`de type ${m.toLowerCase()}`) : "hostile"; const fmtDist = (d) => d ? (d.includes("<50m")?"au contact immédiat":d.includes("100m")?"à courte distance":d.includes("300m")?"à moyenne distance":"à longue distance") : ""; if (logs.length === 0) txt += "Aucun événement notable.\n"; else logs.slice().reverse().forEach(l => { let s = ""; const d = l.raw; const t = l.missionTime; if(l.type === 'CONTACT') s = `À ${t}, nos éléments ont établi un visuel sur ${fmtVol(d.volume)} ${fmtMen(d.menace)}. La cible a été localisée au ${d.direction}, ${fmtDist(d.distance)}.`; else if(l.type === 'FEU') s = `À ${t}, prise à partie ${de(fmtVol(d.volume))} ${fmtMen(d.menace)} au ${d.direction}. Le groupe a riposté immédiatement.`; else if(l.type === 'SANTE') { let etatTxt = d.etat; if (d.etat === "Blessé Léger") etatTxt = "a été blessé légèrement"; if (d.etat === "Blessé Grave") etatTxt = "a été blessé gravement"; if (d.etat === "Inconscient") etatTxt = "est inconscient"; if (d.etat === "DCD") etatTxt = "est décédé"; s = `À ${t}, alerte sanitaire : le ${d.soldatData.name} ${etatTxt}. Prise en charge par l'auxiliaire sanitaire.`; } else if(l.type === 'MVT') s = `À ${t}, le groupe a effectué un mouvement tactique : ${d.typeMvt.toLowerCase()}.`; else if(l.type === 'RAS') s = `Vers ${t}, reconnaissance de zone terminée. Rien à signaler.`; else if(l.type === 'APPUI') s = `À ${t}, mise en place d'un dispositif de surveillance et d'appui.`; else if(l.type === 'TRANS') s = `À ${t}, contrôle des liaisons radio effectué.`; else if(l.type === 'DIVERS') s = `À ${t}, renseignement divers : "${d.details}".`; else s = `À ${t} : ${d.details||l.message}.`; txt += `${s}\n`; }); txt += `\nBILAN:\nEffectif: ${roster.length}. Opérationnels: ${roster.filter(s=>s.status==='APTE').length}.\n`; const cas = roster.filter(s=>s.status!=='APTE'); if(cas.length>0) txt += `Pertes: ${cas.map(s=>`${s.rank} ${s.name} (${s.status})`).join(', ')}.\n`; else txt += "Aucune perte.\n"; txt += `\nRespectueusement,\n\n${currentLeader?.rank || squadData.leaderRank} ${currentLeader?.name || squadData.leaderName}\nCDG ${squadData.name}`; return txt; };
+            
+            const addSmartLog = (type, data) => { 
+                const t = new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}); 
+                let m = ""; 
+                const v = (val) => val ? (val.includes("Isolé")?"1 Pax":val.includes("Binôme")?"2 Pax":val.includes("Équipe")?"4 Pax":val.includes("Groupe")?"10+":val) : "?";
+                
+                if (type === 'CONTACT') m = `VISUEL: ${v(data.volume)} ${data.menace} (${data.activity}) -> ${data.direction}`;
+                else if (type === 'FEU') m = `ENGAGEMENT: ${v(data.volume)} ${data.menace} -> ${data.direction}`;
+                else if (type === 'SANTE') m = `ALERTE MED: ${data.soldatData.name} -> ${data.etat}`;
+                else if (type === 'MVT') m = `MVT: ${data.typeMvt}`;
+                else if (type === 'ENV') m = `${data.category}: ${data.detail}`;
+                else if (type === 'DIVERS') m = `RENS: ${data.details}`;
+                else m = data.details || "";
+                
+                setLogs(prev => [{ id: Date.now(), time: t, missionTime: formatTime(missionTime), type, raw: data, message: m }, ...prev]); 
+                if (type === 'SANTE' && data.soldatData?.id) { 
+                    let st = 'BLESSÉ'; if(data.etat === 'DCD') st = 'DCD'; else if(data.etat === 'Inconscient') st = 'INCONSCIENT'; 
+                    setRoster(prev => prev.map(s => s.id === data.soldatData.id ? { ...s, status: st } : s)); 
+                } 
+            };
+            
+            const handleActionClick = (type) => { if (!missionActive && type !== 'DIVERS') { alert("MISSION NON DÉBUTÉE"); return; } if (['CONTACT', 'FEU', 'SANTE', 'MVT', 'DIVERS', 'ENV'].includes(type)) { setCurrentActionType(type); setModalOpen(true); } else { if (type === 'RAS') addSmartLog(type, { details: "R.A.S." }); if (type === 'APPUI') addSmartLog(type, { details: "Poste d'observation." }); if (type === 'TRANS') addSmartLog(type, { details: "Check radio." }); } };
+            
+            // OBJECTIVES
+            const addObjective = () => { if(newObjText.trim()){ setObjectives([...objectives, { id: Date.now(), text: newObjText, done: false }]); setNewObjText(""); } };
+            const toggleObjective = (id) => { setObjectives(objectives.map(o => o.id === id ? { ...o, done: !o.done } : o)); };
+            const deleteObjective = (id) => { setObjectives(objectives.filter(o => o.id !== id)); };
+
+            const generateNarrativeAAR = () => { 
+                const today = new Date().toLocaleDateString('fr-FR'); const currentLeader = roster.find(s => s.role.includes("CDG")); 
+                let txt = `MINISTÈRE DES ARMÉES\nOBJET : COMPTE-RENDU D'OPÉRATION "${missionData.name}"\nUNITÉ : GROUPE ${squadData.name}\nDATE : ${today}\n\nMon Capitaine,\n\nJ'ai l'honneur de vous rendre compte de la mission effectuée ce jour par le groupe ${squadData.name} dans le secteur ${missionData.location}. L'objectif était de : ${missionData.objective}.\n\nDÉROULEMENT DES FAITS :\n`; 
+                const fmtVol = (v) => v ? (v.includes("Isolé")?"un individu isolé":v.includes("Binôme")?"un binôme":v.includes("Équipe")?"une équipe":v.includes("Groupe")?"un groupe de combat":v.includes("Section")?"une section":v) : "un volume indéterminé"; 
+                const fmtMen = (m) => m ? (m==="Infanterie"?"d'infanterie":m==="Sniper"?"de tireurs d'élite":`de type ${m.toLowerCase()}`) : "hostile"; 
+                const fmtDist = (d) => d ? (d.includes("<50m")?"au contact immédiat":d.includes("100m")?"à courte distance":d.includes("300m")?"à moyenne distance":"à longue distance") : ""; 
+                
+                if (logs.length === 0) txt += "Aucun événement notable.\n"; else logs.slice().reverse().forEach(l => { let s = ""; const d = l.raw; const t = l.missionTime; if(l.type === 'CONTACT') s = `À ${t}, visuel confirmé sur ${fmtVol(d.volume)} ${fmtMen(d.menace)} (${d.activity.toLowerCase()}). Equipement identifié : ${d.equipment.toLowerCase()}. Localisation : ${d.direction}, ${fmtDist(d.distance)}.`; else if(l.type === 'FEU') s = `À ${t}, engagement de ${de(fmtVol(d.volume))} ${fmtMen(d.menace)} au ${d.direction}.`; else if(l.type === 'SANTE') { let etatTxt = d.etat; if (d.etat === "Blessé Léger") etatTxt = "a été blessé légèrement"; if (d.etat === "Blessé Grave") etatTxt = "a été blessé gravement"; if (d.etat === "Inconscient") etatTxt = "est inconscient"; if (d.etat === "DCD") etatTxt = "est décédé"; s = `À ${t}, alerte sanitaire : le ${d.soldatData.name} ${etatTxt}.`; } else if(l.type === 'MVT') s = `À ${t}, mouvement tactique : ${d.typeMvt.toLowerCase()}.`; else if(l.type === 'ENV') s = `À ${t}, relevé environnemental : ${d.category} - ${d.detail}.`; else if(l.type === 'DIVERS') s = `À ${t}, renseignement divers : "${d.details}".`; else s = `À ${t} : ${d.details||l.message}.`; txt += `${s}\n`; }); 
+                
+                txt += `\nBILAN DES OBJECTIFS :\n`;
+                if(objectives.length === 0) txt += "Aucun objectif spécifique défini.\n";
+                else objectives.forEach(o => txt += `- ${o.text} : ${o.done ? "ACCOMPLI" : "NON ATTEINT"}\n`);
+
+                txt += `\nBILAN HUMAIN & QUALITATIF :\nEffectif: ${roster.length}. Opérationnels: ${roster.filter(s=>s.status==='APTE').length}.\n`; 
+                const cas = roster.filter(s=>s.status!=='APTE'); if(cas.length>0) txt += `Pertes: ${cas.map(s=>`${s.rank} ${s.name} (${s.status})`).join(', ')}.\n`; else txt += "Aucune perte à déplorer.\n"; 
+                txt += `Moral de l'unité : ${debrief.morale}.\n`;
+                if(debrief.plus) txt += `Points positifs : ${debrief.plus}\n`;
+                if(debrief.minus) txt += `Points à améliorer : ${debrief.minus}\n`;
+                if(debrief.nominations) txt += `Nominations/Actions d'éclat : ${debrief.nominations}\n`;
+
+                txt += `\nRespectueusement,\n\n${currentLeader?.rank || squadData.leaderRank} ${currentLeader?.name || squadData.leaderName}\nCDG ${squadData.name}`; return txt; 
+            };
+            
             const sendReportToHQ = async () => { try { await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'active_squads', squadData.name), { finalReport: generateNarrativeAAR(), reportSubmitted: true, lastUpdate: Date.now() }); alert("Envoyé au QG."); } catch (e) { alert("Erreur envoi."); } };
             const addSoldier = () => { if (!newSoldier.name) return; setRoster([...roster, { ...newSoldier, id: Date.now(), status: "APTE" }]); setNewSoldier({ name: "", rank: "Soldat", role: "GV" }); };
 
@@ -380,12 +591,40 @@
                 <div className="min-h-screen pb-24 bg-black text-emerald-500 font-mono">
                     {modalOpen && <SitrepModal onClose={() => setModalOpen(false)} type={currentActionType} onConfirm={(d) => { addSmartLog(currentActionType, d); setModalOpen(false); }} roster={roster} />}
                     {manageModalOpen && <ManageSoldierModal onClose={() => setManageModalOpen(false)} roster={roster} onDecoSauvage={handleDecoSauvage} onPassation={handlePassation} />}
+                    
                     <header className="bg-slate-950 border-b-2 border-emerald-800 p-2 sm:p-4 sticky top-0 z-40 shadow-lg flex justify-between items-center relative"><div className="flex items-center gap-2 sm:gap-3 overflow-hidden"><div className={`p-1 border border-emerald-800 shrink-0 ${missionActive ? "animate-pulse bg-red-950/50 border-red-500" : "bg-emerald-950/30"}`}><img src="Logo.png" className="h-8 w-8 sm:h-10 sm:w-10 object-contain" alt="Unit Logo" /></div><div className="min-w-0"><h1 className="text-sm sm:text-xl font-black uppercase tracking-[0.15em] text-emerald-400 truncate">{squadData.name} ACTUAL</h1><div className="text-[8px] sm:text-[10px] text-emerald-700 font-mono uppercase tracking-widest truncate">{missionActive ? "/// TRANSMISSION CRYPTÉE" : "/// VEILLE RADIO"}</div></div></div><div className="flex items-center gap-2 sm:gap-4 shrink-0"><HeaderClock className="flex text-emerald-500" /><button onClick={onLogout} className="text-emerald-800 hover:text-red-500 border border-emerald-900 p-2 hover:bg-red-950/20"><Icon name="LogOut" size={20} /></button></div></header>
                     <main className="max-w-4xl mx-auto p-4 relative z-10">
-                        {activeTab === 'briefing' && (<div className="space-y-6 animate-fade-in"><TacticalCard title="CADRE D'ORDRES"><div className="space-y-4"><InputField label="Opération" placeholder="EX: OPÉRATION SENTINELLE" value={missionData.name} onChange={(e)=>setMissionData({...missionData,name:e.target.value})} /><InputField label="Mission" placeholder="EX: RECONNAISSANCE AXE ALPHA" value={missionData.objective} onChange={(e)=>setMissionData({...missionData,objective:e.target.value})} /><InputField label="Secteur" placeholder="EX: GRID 045-112 / KAVALA" value={missionData.location} onChange={(e)=>setMissionData({...missionData,location:e.target.value})} /></div></TacticalCard><TacticalButton variant={missionActive?"danger":"primary"} className="w-full py-6 text-lg border-2" onClick={()=>{setMissionActive(!missionActive); addSmartLog("SYS", {details: missionActive?"CLÔTURE":"DÉCLENCHEMENT"});}}><Icon name="Activity" size={24}/> {missionActive?"FIN DE MISSION":"DÉMARRER"}</TacticalButton></div>)}
-                        {activeTab === 'roster' && (<div className="space-y-6 animate-fade-in"><TacticalCard title="EFFECTIFS / ORBAT"><div className="flex flex-col gap-3 mb-6 border-b border-emerald-900/50 pb-6"><div className="flex flex-col sm:flex-row gap-2"><div className="flex-1"><input className="w-full bg-black border border-emerald-900 text-emerald-400 p-3 text-sm outline-none uppercase" placeholder="NOM" value={newSoldier.name} onChange={(e)=>setNewSoldier({...newSoldier,name:e.target.value})} /></div><select className="bg-black border border-emerald-900 text-emerald-400 p-3 text-sm outline-none uppercase" value={newSoldier.rank} onChange={(e)=>setNewSoldier({...newSoldier,rank:e.target.value})}>{RANKS.map(r=><option key={r} value={r}>{r}</option>)}</select><select className="bg-black border border-emerald-900 text-emerald-400 p-3 text-sm outline-none uppercase" value={newSoldier.role} onChange={(e)=>setNewSoldier({...newSoldier,role:e.target.value})}>{ROLES.map(r=><option key={r} value={r}>{r}</option>)}</select><button onClick={()=>setRoster([...roster, {...newSoldier, id:Date.now(), status:'APTE'}])} className="bg-emerald-900/30 border border-emerald-600 text-emerald-400 p-3"><Icon name="Plus" size={20}/></button></div></div><div className="flex justify-end mb-2"><button onClick={()=>setManageModalOpen(true)} className="text-xs bg-slate-900 border border-slate-700 text-slate-400 px-3 py-1 hover:text-white">GESTION PERSONNEL</button></div><div className="space-y-2">{roster.map(s=>(<div key={s.id} className="flex items-center justify-between bg-emerald-950/10 border-l-2 border-emerald-600 p-3"><div><div className="text-emerald-400 font-bold font-mono text-sm"><span className="text-emerald-700 mr-2">{s.rank}</span>{s.name}</div><div className="text-emerald-800 text-[10px] uppercase">{s.role}</div></div><span className={`text-[10px] font-bold px-2 py-1 border ${s.status==='APTE'?'border-emerald-800 text-emerald-600':'border-red-800 text-red-500'}`}>{s.status}</span></div>))}</div></TacticalCard></div>)}
-                        {activeTab === 'ops' && (<div className="flex flex-col gap-4 animate-fade-in"><div className="grid grid-cols-2 gap-3 sm:grid-cols-4"><TacticalButton variant="action" onClick={()=>handleActionClick('CONTACT')}><Icon name="Target" size={18}/> CONTACT</TacticalButton><TacticalButton variant="action" onClick={()=>handleActionClick('FEU')}><Icon name="Crosshair" size={18}/> FEU</TacticalButton><TacticalButton variant="action" onClick={()=>handleActionClick('MVT')}><Icon name="ChevronRight" size={18}/> MVT</TacticalButton><TacticalButton variant="action" onClick={()=>handleActionClick('APPUI')}><Icon name="Shield" size={18}/> APPUI</TacticalButton><TacticalButton variant="action" onClick={()=>handleActionClick('RAS')}><Icon name="MapPin" size={18}/> RAS</TacticalButton><TacticalButton variant="danger" onClick={()=>handleActionClick('SANTE')}><Icon name="Activity" size={18}/> AUX SAN</TacticalButton><TacticalButton variant="secondary" onClick={()=>handleActionClick('DIVERS')}><Icon name="FileText" size={18}/> DIVERS</TacticalButton><TacticalButton variant="secondary" onClick={()=>handleActionClick('TRANS')}><Icon name="Radio" size={18}/> RADIO</TacticalButton></div><TacticalCard title="MAIN COURANTE" className="flex-1 min-h-[300px] flex flex-col"><div className="flex-1 overflow-y-auto space-y-1 pr-2 max-h-[400px]">{logs.map(log=>(<div key={log.id} className="font-mono text-xs border-l border-emerald-900 pl-2 py-1 mb-1"><span className="text-emerald-700 mr-2">[{log.missionTime}]</span><span className={`font-bold mr-2 ${log.type==='SANTE'?'text-red-500':log.type==='CONTACT'?'text-amber-500':'text-emerald-500'}`}>{log.type}:</span><span className="text-emerald-300 opacity-80">{log.message}</span></div>))}</div></TacticalCard></div>)}
-                        {activeTab === 'aar' && (<div className="space-y-4 h-full animate-fade-in"><TacticalCard title="RAPPORT" className="h-full flex flex-col"><textarea className="w-full h-[400px] bg-black border border-emerald-900 text-emerald-400 font-mono text-xs p-4" readOnly value={generateNarrativeAAR()} /><div className="mt-4 flex justify-end gap-2"><TacticalButton onClick={sendReportToHQ} variant="primary"><Icon name="Upload" size={18}/> QG</TacticalButton></div></TacticalCard></div>)}
+                        {activeTab === 'briefing' && (<div className="space-y-6 animate-fade-in">
+                            <TacticalCard title="CADRE D'ORDRES"><div className="space-y-4"><InputField label="Opération" placeholder="EX: OPÉRATION SENTINELLE" value={missionData.name} onChange={(e)=>setMissionData({...missionData,name:e.target.value})} /><InputField label="Mission" placeholder="EX: RECONNAISSANCE AXE ALPHA" value={missionData.objective} onChange={(e)=>setMissionData({...missionData,objective:e.target.value})} /><InputField label="Secteur" placeholder="EX: GRID 045-112 / KAVALA" value={missionData.location} onChange={(e)=>setMissionData({...missionData,location:e.target.value})} /></div></TacticalCard>
+                            <TacticalCard title="OBJECTIFS TACTIQUES">
+                                <div className="space-y-2">
+                                    {objectives.map(o => (
+                                        <div key={o.id} className="flex items-center justify-between bg-emerald-900/20 p-2 border border-emerald-800">
+                                            <div className="flex items-center gap-2"><button onClick={() => toggleObjective(o.id)} className={`w-4 h-4 border ${o.done ? 'bg-emerald-500 border-emerald-500' : 'border-emerald-700'} flex items-center justify-center`}>{o.done && <Icon name="Check" size={12} className="text-black"/>}</button><span className={`text-xs ${o.done ? 'text-emerald-400 line-through opacity-50' : 'text-white'}`}>{o.text}</span></div>
+                                            <button onClick={() => deleteObjective(o.id)} className="text-red-500 hover:text-red-400"><Icon name="Trash2" size={14}/></button>
+                                        </div>
+                                    ))}
+                                    <div className="flex gap-2 mt-2"><input className="flex-1 bg-black border border-emerald-900 text-emerald-400 p-2 text-xs uppercase" placeholder="NOUVEL OBJECTIF" value={newObjText} onChange={(e)=>setNewObjText(e.target.value)} /><button onClick={addObjective} className="bg-emerald-900/30 border border-emerald-600 px-3 text-emerald-400"><Icon name="Plus" size={16}/></button></div>
+                                </div>
+                            </TacticalCard>
+                            <TacticalButton variant={missionActive?"danger":"primary"} className="w-full py-6 text-lg border-2" onClick={()=>{setMissionActive(!missionActive); addSmartLog("SYS", {details: missionActive?"CLÔTURE":"DÉCLENCHEMENT"});}}><Icon name="Activity" size={24}/> {missionActive?"FIN DE MISSION":"DÉMARRER"}</TacticalButton>
+                        </div>)}
+                        
+                        {activeTab === 'roster' && (<div className="space-y-6 animate-fade-in"><TacticalCard title="EFFECTIFS / ORBAT"><div className="flex flex-col gap-3 mb-6 border-b border-emerald-900/50 pb-6"><div className="flex flex-col sm:flex-row gap-2"><div className="flex-1"><input className="w-full bg-black border border-emerald-900 text-emerald-400 p-3 text-sm outline-none uppercase" placeholder="NOM" value={newSoldier.name} onChange={(e)=>setNewSoldier({...newSoldier,name:e.target.value})} /></div><select className="bg-black border border-emerald-900 text-emerald-400 p-3 text-sm outline-none uppercase" value={newSoldier.rank} onChange={(e)=>setNewSoldier({...newSoldier,rank:e.target.value})}>{RANKS.map(r=><option key={r} value={r}>{r}</option>)}</select><select className="bg-black border border-emerald-900 text-emerald-400 p-3 text-sm outline-none uppercase" value={newSoldier.role} onChange={(e)=>setNewSoldier({...newSoldier,role:e.target.value})}>{ROLES.map(r=><option key={r} value={r}>{r}</option>)}</select><button onClick={addSoldier} className="bg-emerald-900/30 border border-emerald-600 text-emerald-400 p-3 hover:bg-emerald-800/50"><Icon name="Plus" size={20}/></button></div></div><div className="flex justify-end mb-2"><button onClick={()=>setManageModalOpen(true)} className="text-xs bg-slate-900 border border-slate-700 text-slate-400 px-3 py-1 hover:text-white">GESTION PERSONNEL</button></div><div className="space-y-2">{roster.map(s=>(<div key={s.id} className="flex items-center justify-between bg-emerald-950/10 border-l-2 border-emerald-600 p-3"><div><div className="text-emerald-400 font-bold font-mono text-sm"><span className="text-emerald-700 mr-2">{s.rank}</span>{s.name}</div><div className="text-emerald-800 text-[10px] uppercase">{s.role}</div></div><span className={`text-[10px] font-bold px-2 py-1 border ${s.status==='APTE'?'border-emerald-800 text-emerald-600':'border-red-800 text-red-500'}`}>{s.status}</span></div>))}</div></TacticalCard></div>)}
+                        
+                        {activeTab === 'ops' && (<div className="flex flex-col gap-4 animate-fade-in"><div className="grid grid-cols-2 gap-3 sm:grid-cols-4"><TacticalButton variant="action" onClick={()=>handleActionClick('CONTACT')}><Icon name="Target" size={18}/> CONTACT</TacticalButton><TacticalButton variant="action" onClick={()=>handleActionClick('FEU')}><Icon name="Crosshair" size={18}/> FEU</TacticalButton><TacticalButton variant="action" onClick={()=>handleActionClick('MVT')}><Icon name="ChevronRight" size={18}/> MVT</TacticalButton><TacticalButton variant="action" onClick={()=>handleActionClick('APPUI')}><Icon name="Shield" size={18}/> APPUI</TacticalButton><TacticalButton variant="action" onClick={()=>handleActionClick('RAS')}><Icon name="MapPin" size={18}/> RAS</TacticalButton><TacticalButton variant="danger" onClick={()=>handleActionClick('SANTE')}><Icon name="Activity" size={18}/> AUX SAN</TacticalButton><TacticalButton variant="secondary" onClick={()=>handleActionClick('ENV')}><Icon name="Mountain" size={18}/> MÉTÉO / TOPO</TacticalButton><TacticalButton variant="secondary" onClick={()=>handleActionClick('DIVERS')}><Icon name="FileText" size={18}/> DIVERS</TacticalButton></div><TacticalCard title="MAIN COURANTE" className="flex-1 min-h-[300px] flex flex-col"><div className="flex-1 overflow-y-auto space-y-1 pr-2 max-h-[400px]">{logs.map(log=>(<div key={log.id} className="font-mono text-xs border-l border-emerald-900 pl-2 py-1 mb-1"><span className="text-emerald-700 mr-2">[{log.missionTime}]</span><span className={`font-bold mr-2 ${log.type==='SANTE'?'text-red-500':log.type==='CONTACT'?'text-amber-500':'text-emerald-500'}`}>{log.type}:</span><span className="text-emerald-300 opacity-80">{log.message}</span></div>))}</div></TacticalCard></div>)}
+                        
+                        {activeTab === 'aar' && (<div className="space-y-4 h-full animate-fade-in">
+                            <TacticalCard title="BILAN QUALITATIF">
+                                <div className="space-y-2">
+                                    <div><label className="text-[10px] text-emerald-700 uppercase font-bold">MORAL</label><select className="w-full bg-black border border-emerald-900 text-emerald-400 p-2 text-xs" value={debrief.morale} onChange={(e)=>setDebrief({...debrief, morale:e.target.value})}><option>Élevé</option><option>Moyen</option><option>Bas</option></select></div>
+                                    <div><label className="text-[10px] text-emerald-700 uppercase font-bold">POINTS POSITIFS (+)</label><input className="w-full bg-black border border-emerald-900 text-emerald-400 p-2 text-xs" value={debrief.plus} onChange={(e)=>setDebrief({...debrief, plus:e.target.value})} /></div>
+                                    <div><label className="text-[10px] text-emerald-700 uppercase font-bold">POINTS À AMÉLIORER (-)</label><input className="w-full bg-black border border-emerald-900 text-emerald-400 p-2 text-xs" value={debrief.minus} onChange={(e)=>setDebrief({...debrief, minus:e.target.value})} /></div>
+                                    <div><label className="text-[10px] text-emerald-700 uppercase font-bold">NOMINATIONS</label><input className="w-full bg-black border border-emerald-900 text-emerald-400 p-2 text-xs" placeholder="Soldat à féliciter..." value={debrief.nominations} onChange={(e)=>setDebrief({...debrief, nominations:e.target.value})} /></div>
+                                </div>
+                            </TacticalCard>
+                            <TacticalCard title="RAPPORT FINAL" className="h-full flex flex-col"><textarea className="w-full h-[300px] bg-black border border-emerald-900 text-emerald-400 font-mono text-xs p-4" readOnly value={generateNarrativeAAR()} /><div className="mt-4 flex justify-end gap-2"><TacticalButton onClick={sendReportToHQ} variant="primary"><Icon name="Upload" size={18}/> QG</TacticalButton></div></TacticalCard>
+                        </div>)}
                     </main>
                     <nav className="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-emerald-900 p-2 pb-safe z-50"><div className="max-w-4xl mx-auto grid grid-cols-4 gap-1">{['briefing', 'roster', 'ops', 'aar'].map(tab => (<button key={tab} onClick={() => setActiveTab(tab)} className={`flex flex-col items-center p-2 transition-all ${activeTab===tab ? 'bg-emerald-900/30 text-emerald-400 border-t-2 border-emerald-500' : 'text-emerald-900 hover:text-emerald-600'}`}>{tab==='briefing' && <Icon name="FileText" size={20}/>} {tab==='roster' && <Icon name="Users" size={20}/>} {tab==='ops' && <Icon name="Crosshair" size={20}/>} {tab==='aar' && <Icon name="Save" size={20}/>}<span className="text-[9px] uppercase font-bold mt-1 tracking-widest">{tab==='briefing'?'ORDRES':tab==='ops'?'CONDUITE':tab.toUpperCase()}</span></button>))}</div></nav>
                 </div>
@@ -413,9 +652,27 @@
             const handleHQLogin = async (rank, name) => {
                  if (!db) { setSquadData({ isHQ: true }); return; }
                  const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'active_squads'), where("isHQ", "==", true));
-                 setLoginState('pending_hq');
-                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'hq_requests', user.uid), { rank, name, status: 'pending', timestamp: Date.now() });
-                 setTimeout(async () => { const hqExists = false; if(!hqExists) { setSquadData({ isHQ: true, leaderName: name, leaderRank: rank }); setLoginState('idle'); } }, 2000);
+                 
+                 // CORRECTION LOGIQUE HQ: On vérifie d'abord s'il y a déjà un QG
+                 try {
+                    const querySnapshot = await getDocs(q);
+                    if (querySnapshot.empty) {
+                         // Personne au QG -> Je prends la place
+                         await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'active_squads', 'HQ_MAIN'), { 
+                             isHQ: true, leaderName: name, leaderRank: rank, userId: user.uid, timestamp: Date.now() 
+                         });
+                         setSquadData({ isHQ: true, leaderName: name, leaderRank: rank });
+                    } else {
+                        // QG occupé -> Je demande l'accès
+                        setLoginState('pending_hq');
+                        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'hq_requests', user.uid), { 
+                            rank, name, status: 'pending', timestamp: Date.now() 
+                        });
+                    }
+                 } catch(e) {
+                     // Fallback hors ligne
+                     setSquadData({ isHQ: true, leaderName: name, leaderRank: rank });
+                 }
             };
 
             const handleLogout = async () => {
@@ -425,7 +682,13 @@
                         const userStatsRef = doc(db, 'artifacts', appId, 'public', 'data', 'user_stats', squadData.leaderName);
                         await setDoc(userStatsRef, { totalTime: increment(duration), lastRank: squadData.leaderRank, sessions: increment(1) }, { merge: true });
                         await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'history_logs'), { type: "FIN_SERVICE", message: `FIN DE SERVICE: ${squadData.leaderRank} ${squadData.leaderName} (${Math.floor(duration/60)} min)`, timestamp: Date.now() });
-                        if(!squadData.isHQ) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'active_squads', squadData.name));
+                        
+                        if(!squadData.isHQ) {
+                            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'active_squads', squadData.name));
+                        } else {
+                            // Si je suis le QG et que je pars, je libère le poste
+                             await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'active_squads', 'HQ_MAIN'));
+                        }
                     } catch(e) {}
                 }
                 setSquadData(null);
@@ -436,6 +699,7 @@
             if (loginState === 'pending_hq') return <div className="h-screen bg-black flex items-center justify-center text-blue-500 font-mono tracking-widest animate-pulse">EN ATTENTE VALIDATION ÉTAT-MAJOR...</div>;
             if (!squadData) return <SquadSelector user={user} onSelectSquad={setSquadData} onHQRequest={handleHQLogin} />;
             if (squadData.isHQ) return <HQDashboard onLogout={handleLogout} user={user} />;
+            if (squadData.isSection) return <SectionDashboard onLogout={handleLogout} user={user} squadData={squadData} />;
             return <MainApp squadData={{...squadData, startTime: squadData.startTime || Date.now()}} user={user} onLogout={handleLogout} />;
         };
 
