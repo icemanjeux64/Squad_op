@@ -103,7 +103,7 @@
                     <span class="text-red-700">FOF</span>NET
                 </h1>
                 <div class="flex justify-center gap-4 text-[10px] uppercase tracking-[0.3em] text-slate-500">
-                    <span>Secure V.3.6</span><span>•</span><span>Ops Center</span><span>•</span><span class="text-emerald-500 animate-pulse">Online</span>
+                    <span>Secure V.3.6.1</span><span>•</span><span>Ops Center</span><span>•</span><span class="text-emerald-500 animate-pulse">Online</span>
                 </div>
             </div>
 
@@ -419,6 +419,8 @@
             openLoginModal: function(type) {
                 const modal = document.getElementById('login-modal');
                 const content = document.getElementById('modal-content');
+                if(!modal || !content) return;
+                
                 modal.classList.remove('hidden');
                 
                 let html = '';
@@ -430,11 +432,11 @@
                     `;
                 } else if (type === 'SL') {
                     const squad = SQUADS_CONFIG.find(s => s.id === state.selectedSquadId);
-                    const sData = state.squads[state.selectedSquadId];
+                    const sData = state.squads[state.selectedSquadId] || {};
                     const isAssigned = sData.status === 'ASSIGNED';
                     
                     html = `
-                        <div class="mb-6"><i data-lucide="target" class="w-16 h-16 text-emerald-600 mx-auto"></i><h2 class="text-xl font-bold text-white uppercase">ID SQUAD LEADER</h2><div class="text-emerald-500 font-bold">${squad.name}</div></div>
+                        <div class="mb-6"><i data-lucide="target" class="w-16 h-16 text-emerald-600 mx-auto"></i><h2 class="text-xl font-bold text-white uppercase">ID SQUAD LEADER</h2><div class="text-emerald-500 font-bold">${squad ? squad.name : '...'}</div></div>
                     `;
 
                     if (isAssigned) {
@@ -481,7 +483,7 @@
                 } else {
                     // SL Login
                     const squadId = state.selectedSquadId;
-                    const squadData = state.squads[squadId];
+                    const squadData = state.squads[squadId] || {};
                     
                     await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), {
                         ...squadData,
@@ -521,7 +523,6 @@
             },
 
             updateSquad: async function(squadId, field, val) {
-                // SAFE CHECK: Check if squad data exists before accessing properties
                 const currentSquad = state.squads[squadId] || {};
                 const updates = { [field]: val };
                 // Logic reset
@@ -541,7 +542,7 @@
             },
 
             endMission: async function(squadId, report = "R.A.S", outcome = "UNKNOWN") {
-                const sData = state.squads[squadId];
+                const sData = state.squads[squadId] || {};
                 // Log
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'mission_logs'), {
                     sl: sData.sl, squad: sData.name, objective: sData.objective,
@@ -660,6 +661,14 @@
                 const note = document.getElementById('final-report-input').value;
                 const status = document.querySelector('input[name="mission-status"]:checked').value;
                 if(confirm("Clôturer la mission ?")) this.endMission(squadId, note, status);
+            },
+
+            // --- EM LOGIC ---
+            toggleCDS: async function(squadId, cdsIndex) {
+                const squad = state.squads[squadId] || {};
+                const currentCds = `CDS ${cdsIndex}`;
+                const newCds = (squad.cds_owner === currentCds) ? null : currentCds;
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'squads', squadId), { cds_owner: newCds }, { merge: true });
             },
 
             // --- REPORT MODAL ACTIONS (STAFF) ---
@@ -1008,6 +1017,15 @@
                         </div>
                     `;
                 }
+            },
+            
+            // Helper pour construire les boutons de sélection
+            renderOptionGrid: function(key, options, current) {
+                return `<div class="grid grid-cols-2 gap-2">
+                    ${options.map(opt => `
+                        <button onclick="window.app.setSitrepData('${key}', '${opt}')" class="p-4 border ${current === opt ? 'bg-white text-black font-bold border-white' : 'bg-black text-slate-400 border-slate-700 hover:border-white'} uppercase text-xs transition-colors">${opt}</button>
+                    `).join('')}
+                </div>`;
             }
         };
 
