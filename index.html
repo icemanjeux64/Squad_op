@@ -103,7 +103,7 @@
                     <span class="text-red-700">FOF</span>NET
                 </h1>
                 <div class="flex justify-center gap-4 text-[10px] uppercase tracking-[0.3em] text-slate-500">
-                    <span>Secure V.3.6.3</span><span>•</span><span>Ops Center</span><span>•</span><span class="text-emerald-500 animate-pulse">Online</span>
+                    <span>Secure V.3.7</span><span>•</span><span>Ops Center</span><span>•</span><span class="text-emerald-500 animate-pulse">Online</span>
                 </div>
             </div>
 
@@ -155,7 +155,6 @@
                             <div class="flex flex-col">
                                 <label class="text-[9px] text-[#66fcf1] uppercase">Base</label>
                                 <select id="em-base-select" onchange="window.app.updateSettings('base', this.value)" class="bg-[#0b0c10] text-white border border-slate-600 text-xs py-1 px-2 uppercase outline-none focus:border-[#66fcf1]">
-                                    <!-- Options Bases -->
                                 </select>
                             </div>
                             <div class="flex flex-col w-24 md:w-32">
@@ -292,6 +291,7 @@
 
         // --- CONSTANTES ---
         const STAFF_LIST = ["MJR.Lazarevic", "WhiZzper", "Papa Yankee", "Le_S", "teckilgfx", "Eksypa", "GlockTrooper77", "Pitivier le vrai"];
+        // NOTE: BASES removed, we use OBJECTIVES for both now per user request
         const OBJECTIVES = ["ALABAMA", "ALASKA", "ARIZONA", "ARKANSAS", "APOLLO", "AMBER", "AUGUSTA", "ATLAS", "AUSTIN", "BALTIMORE", "BROOKLYN", "CALIFORNIA", "CHICAGO", "COLORADO", "CONCORDE", "CONNECTICUT", "DALLAS", "DAYTON", "DELAWARE", "DENVER", "FLORIDA", "FRESNO", "GEORGIA", "HAWAI", "HOUSTON", "IDAHO", "ILLINOIS", "INDIANA", "IOWA", "JUNKYARD", "KANSAS", "KENTUCKY", "LAS VEGAS", "LIBERTY", "LOGISTIQUE", "LOS ANGELES", "LOUISIANA", "MAINE", "MARYLAND", "MASSACHUSETTS", "MIAMI", "MICHIGAN", "MINNESOTA", "MISSISSIPPI", "MISSOURI", "MONTANA", "MONROE", "NASHVILLE", "NEBRASKA", "NEVADA", "NEW HAMPSHIRE", "NEW JERSEY", "NEW MEXICO", "NEW ORLEANS", "NEW YORK", "NORTH CAROLINA", "NORTH DAKOTA", "OHIO", "OKLAHOMA", "OMAHA", "OREGON", "PENNSYLVANIA", "PHILADELPHIA", "PHOENIX", "PORTLAND", "PRINCETON", "PROVIDENCE", "REDHAWK", "RELAI DE L'EST", "RELAI ST PHILIPPE", "RICHEMOND", "RHODE ISLAND", "SAN ANTONIO", "SAN DIEGO", "SAN JOSE", "SEATTLE", "SOUTH CAROLINA", "SOUTH DAKOTA", "SPIRIT", "TAMPA", "TENNESSEE", "TEXAS", "TITAN", "TOUR D'ENTRE-DEUX", "TOUR DE REGINA", "TOUR DES PINS", "TOUR ESTRAPADE", "TUCSON", "TULSA", "UTAH", "VERMONT", "VESPER", "VIRGINIA", "WASHINGTON", "WEST VIRGINIA", "WISCONSIN", "WYOMING", "DEFENSE DE BASE", "SECURITE EM", "RECONNAISSANCE", "DEMINAGE"];
         const SQUADS_CONFIG = [
             { id: 'alpha', name: 'Alpha', freq: '32.0', color: 'bg-emerald-800', border: 'border-emerald-600', text: 'text-emerald-500' },
@@ -564,6 +564,8 @@
             // --- UPDATES & ACTIONS ---
 
             updateSettings: async function(key, val) {
+                // Optimistic Update for UI
+                state.opSettings[key] = val;
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'config', 'ops'), {
                     ...state.opSettings, [key]: val
                 }, { merge: true });
@@ -854,12 +856,16 @@
                 if(document.getElementById('em-stagiaire-input') && document.activeElement.id !== 'em-stagiaire-input') 
                     document.getElementById('em-stagiaire-input').value = state.opSettings.stagiaire || '';
                 
-                // Base Select - Only update if needed to prevent flickers
+                // Base Select - FIXED LOGIC FOR POPULATION
                 const baseSel = document.getElementById('em-base-select');
-                if(baseSel && baseSel.innerHTML.trim() === '') {
-                    baseSel.innerHTML = '<option value="">-- SELECTIONNER --</option>' + OBJECTIVES.map(b => `<option value="${b}" ${state.opSettings.base===b?'selected':''}>${b}</option>`).join('');
+                if (baseSel && baseSel.options.length === 0) {
+                    // Use OBJECTIVES list as requested
+                    baseSel.innerHTML = '<option value="">-- SELECTIONNER --</option>' + OBJECTIVES.map(b => `<option value="${b}">${b}</option>`).join('');
                 }
-                if(baseSel) baseSel.value = state.opSettings.base || '';
+                // Only set value if it exists in state to avoid resetting user selection mid-flight, but here we rely on optimistic update
+                if (baseSel && state.opSettings.base) {
+                   baseSel.value = state.opSettings.base;
+                }
                 
                 // CDS Container
                 const cdsCount = state.opSettings.active_cds_count || 0;
